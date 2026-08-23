@@ -163,6 +163,13 @@
     padding:2px 6px; border-radius:4px; max-width:calc(100% - 34px); white-space:nowrap;
     overflow:hidden; text-overflow:ellipsis;
   }
+  .card .model-pip{
+    position:absolute; bottom:6px; right:8px; font-family:var(--mono); font-size:9px;
+    letter-spacing:.05em; text-transform:uppercase; padding:2px 6px; border-radius:4px;
+    background:rgba(10,12,15,0.65);
+  }
+  .card .model-pip.slim{ color:var(--mint); border:1px solid var(--mint-dim); }
+  .card .model-pip.wide{ color:var(--amber); border:1px solid #6b551f; }
 
   /* ---------- upload options ---------- */
   .upload-options{display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-bottom:6px;}
@@ -349,6 +356,7 @@
   <div style="display:flex; gap:8px; align-items:center;">
     <button class="toolbtn" id="exportBtn">Esporta report</button>
     <button class="toolbtn" id="exportZipBtn">📦 Esporta ZIP</button>
+    <button class="toolbtn" id="detectModelsBtn">🧍 Rileva slim/wide</button>
     <label class="toolbtn" for="addMoreInput" style="cursor:pointer;">+ Immagini</label>
     <input type="file" id="addMoreInput" multiple accept="image/*" style="display:none;">
     <label class="toolbtn" for="addFolderInput" style="cursor:pointer;">+ Cartella</label>
@@ -2491,7 +2499,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     const category = (defaultCategoryInput.value || '').trim() || 'Senza categoria';
     addItems(arr.map(file => ({
       file, url: URL.createObjectURL(file), name: file.name, displayName: file.name,
-      category, status: 'unreviewed'
+      category, status: 'unreviewed', modelType: null
     })));
   }
   fileInput.addEventListener('change', e => { handleFiles(e.target.files); e.target.value=''; });
@@ -2509,7 +2517,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       const category = middle.length ? middle.join(' / ') : 'Senza categoria';
       return {
         file, url: URL.createObjectURL(file), name: file.name, displayName: file.name,
-        category, status: 'unreviewed'
+        category, status: 'unreviewed', modelType: null
       };
     });
     addItems(newItems);
@@ -2540,7 +2548,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         const category = middle.length ? middle.join(' / ') : 'Senza categoria';
         newItems.push({
           file: blob, url: URL.createObjectURL(blob), name: filename, displayName: filename,
-          category, status: 'unreviewed'
+          category, status: 'unreviewed', modelType: null
         });
       }
       zipStatus.textContent = `Caricate ${newItems.length} skin dallo ZIP.`;
@@ -2720,6 +2728,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         <span class="status-pip"></span>
         <span class="idx">${String(i+1).padStart(3,'0')}</span>
         <span class="fname">${it.displayName}</span>
+        ${it.modelType ? `<span class="model-pip ${it.modelType}">${it.modelType === 'slim' ? 'Slim' : 'Wide'}</span>` : ''}
       `;
       card.addEventListener('click', () => openViewer(i));
       grid.appendChild(card);
@@ -2789,6 +2798,49 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     return skinViewer;
   }
 
+  // ---------- rilevamento modello slim/wide ----------
+  // Usa lo stesso rilevatore integrato in skinview3d (analisi dei pixel
+  // trasparenti sulle braccia) così il risultato coincide sempre con
+  // quello mostrato nel visualizzatore 3D quando apri una singola skin.
+  async function detectModelType(url){
+    const sv = ensureSkinViewer();
+    try{
+      await sv.loadSkin(url, { model: 'auto-detect', makeVisible: false });
+      const mt = sv.playerObject?.skin?.modelType;
+      return mt === 'slim' ? 'slim' : 'wide';
+    }catch(err){
+      console.error('Errore rilevamento modello skin:', err);
+      return 'wide'; // fallback prudente: modello classico
+    }
+  }
+
+  async function ensureModelsDetected(onProgress){
+    const targets = items.filter(it => !it.modelType);
+    for(let i = 0; i < targets.length; i++){
+      if(onProgress) onProgress(i + 1, targets.length);
+      targets[i].modelType = await detectModelType(targets[i].url);
+    }
+    return targets.length;
+  }
+
+  const detectModelsBtn = document.getElementById('detectModelsBtn');
+  detectModelsBtn.addEventListener('click', async () => {
+    if(items.length === 0) return;
+    const originalLabel = detectModelsBtn.textContent;
+    detectModelsBtn.disabled = true;
+    const missing = items.filter(it => !it.modelType).length;
+    if(missing === 0){
+      // già tutto rilevato: permette di ri-rilevare da zero su richiesta
+      items.forEach(it => { it.modelType = null; });
+    }
+    await ensureModelsDetected((done, total) => {
+      detectModelsBtn.textContent = `Rilevo modello ${done} / ${total}…`;
+    });
+    detectModelsBtn.disabled = false;
+    detectModelsBtn.textContent = originalLabel;
+    renderGrid();
+  });
+
   function openViewer(index){
     currentIndex = index;
     viewer.classList.add('open');
@@ -2853,6 +2905,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       await sv.loadSkin(it.url);
       if(myToken !== renderToken) return; // navigazione più recente nel frattempo
       const modelType = sv.playerObject?.skin?.modelType;
+      it.modelType = modelType === 'slim' ? 'slim' : 'wide';
       modelBadge.textContent = modelType === 'slim' ? 'Modello slim' : 'Modello classic';
       stageFrame.classList.remove('loading');
       const old = stageFrame.querySelector('.scanline');
@@ -2937,20 +2990,33 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   });
 
   // ---------- export ----------
-  document.getElementById('exportBtn').addEventListener('click', () => {
-    if(items.length === 0) return;
-    const lines = ['categoria,nome_originale,nome_attuale,stato'];
+  function buildReportCSV(){
+    const lines = ['categoria,nome_originale,nome_attuale,stato,modello'];
     items.forEach(it => {
       const esc = s => `"${String(s).replace(/"/g,'""')}"`;
-      lines.push([esc(it.category), esc(it.name), esc(it.displayName), statusLabel(it.status)].join(','));
+      lines.push([esc(it.category), esc(it.name), esc(it.displayName), statusLabel(it.status), esc(it.modelType || 'sconosciuto')].join(','));
     });
-    const blob = new Blob([lines.join('\n')], {type:'text/csv'});
+    return lines.join('\n');
+  }
+
+  document.getElementById('exportBtn').addEventListener('click', async () => {
+    if(items.length === 0) return;
+    const btn = document.getElementById('exportBtn');
+    const originalLabel = btn.textContent;
+    btn.disabled = true;
+    await ensureModelsDetected((done, total) => {
+      btn.textContent = `Rilevo modello ${done} / ${total}…`;
+    });
+    btn.textContent = originalLabel;
+    const blob = new Blob([buildReportCSV()], {type:'text/csv'});
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
     a.download = 'report_controllo_skin.csv';
     a.click();
     URL.revokeObjectURL(url);
+    btn.disabled = false;
+    renderGrid();
   });
 
   document.getElementById('exportZipBtn').addEventListener('click', async () => {
@@ -2959,8 +3025,13 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     const originalLabel = btn.textContent;
     btn.disabled = true;
 
+    // rileva slim/wide per le skin non ancora analizzate, prima di comprimere
+    await ensureModelsDetected((done, total) => {
+      btn.textContent = `Rilevo modello ${done} / ${total}…`;
+    });
+
     const zip = new JSZip();
-    const usedNames = {}; // per cartella, per evitare sovrascritture di nomi duplicati
+    const usedNames = {}; // per cartella (radice modello + categoria), per evitare sovrascritture di nomi duplicati
 
     function extOf(filename){
       const m = filename.match(/\.[a-zA-Z0-9]+$/);
@@ -2977,7 +3048,9 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       const it = items[i];
       btn.textContent = `Comprimo ${i+1} / ${items.length}…`;
 
-      const folderPath = it.category.split('/').map(p => safeSegment(p.trim())).join('/');
+      // radice separata per modello: stesse categorie, ma Wide e Slim non si mescolano mai
+      const modelRoot = it.modelType === 'slim' ? 'Slim' : 'Wide';
+      const folderPath = modelRoot + '/' + it.category.split('/').map(p => safeSegment(p.trim())).join('/');
       // il nome scelto dall'utente potrebbe già avere un'estensione o no
       const hasExt = /\.[a-zA-Z0-9]+$/.test(it.displayName);
       let finalName = hasExt ? safeSegment(it.displayName) : safeSegment(baseName(it.displayName)) + extOf(it.name);
@@ -2996,12 +3069,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     }
 
     // includo anche il report come promemoria dentro allo zip
-    const lines = ['categoria,nome_originale,nome_attuale,stato'];
-    items.forEach(it => {
-      const esc = s => `"${String(s).replace(/"/g,'""')}"`;
-      lines.push([esc(it.category), esc(it.name), esc(it.displayName), statusLabel(it.status)].join(','));
-    });
-    zip.file('report_controllo_skin.csv', lines.join('\n'));
+    zip.file('report_controllo_skin.csv', buildReportCSV());
 
     btn.textContent = 'Genero lo ZIP…';
     try{
