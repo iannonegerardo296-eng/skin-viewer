@@ -105,7 +105,7 @@ Oppure usa il [Dashboard Vercel](https://vercel.com) per un click deploy.
 
 ### Clona il repo (Git)
 ```bash
-git clone https://github.com/yourusername/banco-controllo-skin.git
+git clone https://github.com/iannonegerardo296/banco-controllo-skin.git
 cd banco-controllo-skin/skin-checker
 python -m http.server 8000
 ```
@@ -161,20 +161,12 @@ skin-checker/
 │
 ├── 📚 DOCUMENTAZIONE
 │   ├── README.md                   # Questa guida
-│   ├── QUICKSTART.md               # Istruzioni veloci (2 min)
-│   ├── SETUP.md                    # Setup dettagliato
-│   ├── CHANGELOG.md                # Novità v2.0
-│   ├── VERIFICA_INIZIALE_SPIEGAZIONE.md
-│   ├── FIX_404_ERRORS.md
-│   └── ERRORE_404_SOLUZIONE.txt
 │
 ├── ⚙️ CONFIGURAZIONE
 │   ├── vercel.json                 # Config Vercel
 │   ├── package.json                # Metadata progetto
 │   └── .gitignore                  # Git config
 │
-└── 📄 File di supporto
-    └── START_HERE.txt              # Guida visiva iniziale
 ```
 
 ---
