@@ -193,6 +193,14 @@
   }
   .card .model-pip.slim{ color:var(--mint); border:1px solid var(--mint-dim); }
   .card .model-pip.wide{ color:var(--amber); border:1px solid #6b551f; }
+  .card .quality-badge{
+    position:absolute; bottom:8px; left:8px; font-family:var(--mono); font-size:9px;
+    letter-spacing:.05em; text-transform:uppercase; padding:3px 7px; border-radius:4px;
+    border:1px solid; background:rgba(10,12,15,0.7);
+  }
+  .card .quality-badge.quality-seria{ color:#7ee0c4; border-color:#7ee0c4; background:rgba(126,224,196,.1); }
+  .card .quality-badge.quality-discutibile{ color:var(--amber); border-color:var(--amber); background:rgba(242,193,78,.1); }
+  .card .quality-badge.quality-meme{ color:var(--coral); border-color:var(--coral); background:rgba(255,107,94,.1); }
 
   /* ---------- upload options ---------- */
   .upload-options{display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-bottom:6px;}
@@ -451,6 +459,10 @@
     <button data-filter="unreviewed" data-tooltip="Mostra solo le skin non ancora controllate">DA FARE</button>
     <button data-filter="approved" data-tooltip="Mostra solo le skin approvate">OK</button>
     <button data-filter="flagged" data-tooltip="Mostra solo le skin segnalate da correggere">DA RIVEDERE</button>
+    <span style="border-right:1px solid var(--line); margin:0 8px; height:20px;"></span>
+    <button data-filter="quality-seria" data-tooltip="Mostra solo le skin serie (score 75+)">✅ Serie</button>
+    <button data-filter="quality-discutibile" data-tooltip="Mostra solo le skin strane (score 50-74)">⚠️ Strane</button>
+    <button data-filter="quality-meme" data-tooltip="Mostra solo le probabili skin meme (score <50)">🎭 Meme</button>
   </div>
 
   <div style="display:flex; gap:8px; align-items:center;">
@@ -2560,6 +2572,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   let items = []; // {file, url, name, displayName, category, status}
   let statusFilter = 'all';
   let categoryFilter = 'all';
+  let qualityFilter = 'all';
   let currentIndex = -1;
 
   const dropzone = document.getElementById('dropzone');
@@ -2583,6 +2596,109 @@ https://github.com/nodeca/pako/blob/main/LICENSE
 
   function escapeAttr(s){
     return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  // ---------- quality check (analisi skin seria vs meme) ----------
+  async function analyzeQuality(imageUrl){
+    return new Promise(resolve => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d', { willReadFrequently: true });
+      const img = new Image();
+      
+      img.onload = () => {
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        ctx.drawImage(img, 0, 0);
+        
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const data = imageData.data;
+        
+        // Analizza i colori dell'immagine
+        const colorMap = new Map();
+        const pixels = [];
+        
+        for(let i = 0; i < data.length; i += 4){
+          const r = data[i], g = data[i+1], b = data[i+2], a = data[i+3];
+          if(a > 128){ // pixel non trasparente
+            const hex = `${r.toString(16).padStart(2,'0')}${g.toString(16).padStart(2,'0')}${b.toString(16).padStart(2,'0')}`;
+            colorMap.set(hex, (colorMap.get(hex) || 0) + 1);
+            pixels.push({r, g, b, a});
+          }
+        }
+        
+        // 1. Analisi dei colori (40%)
+        const uniqueColors = colorMap.size;
+        const dominantColor = Math.max(...colorMap.values());
+        const colorMonochrome = dominantColor / pixels.length;
+        let colorScore = Math.max(0, 100 - (colorMonochrome * 200)); // punisce monocolore
+        if(uniqueColors < 8) colorScore *= 0.5; // poche variazioni
+        colorScore = Math.min(100, colorScore);
+        
+        // 2. Saturazione (20%)
+        let satTotal = 0;
+        pixels.forEach(p => {
+          const max = Math.max(p.r, p.g, p.b);
+          const min = Math.min(p.r, p.g, p.b);
+          const l = (max + min) / 2;
+          const s = l > 127 ? (max - min) / (510 - max - min) : (max - min) / (max + min);
+          satTotal += s * 100;
+        });
+        const avgSaturation = satTotal / pixels.length;
+        const saturationScore = Math.max(0, Math.min(100, 100 - Math.abs(55 - avgSaturation) * 2));
+        
+        // 3. Contrasto (10%)
+        let contrastTotal = 0;
+        pixels.forEach(p => {
+          const luminance = (p.r * 0.299 + p.g * 0.587 + p.b * 0.114) / 255;
+          contrastTotal += luminance;
+        });
+        const avgLuminance = contrastTotal / pixels.length;
+        const contrastScore = Math.min(100, avgLuminance * 100 * 1.2);
+        
+        // 4. Texture dettagli (20%) - semplice approssimazione
+        const variance = pixels.reduce((sum, p) => {
+          return sum + Math.abs(p.r - 128) + Math.abs(p.g - 128) + Math.abs(p.b - 128);
+        }, 0) / pixels.length;
+        const textureScore = Math.max(0, Math.min(100, (variance / 128) * 70));
+        
+        // 5. Proporzioni (10%) - analizza la distribuzione verticale
+        const height = canvas.height;
+        const headArea = height / 4; // zona testa (primo quarto)
+        let headPixels = 0, bodyPixels = 0;
+        
+        for(let i = 0; i < data.length; i += 4){
+          const a = data[i+3];
+          if(a > 128){
+            const pixelIndex = i / 4;
+            const y = Math.floor(pixelIndex / canvas.width);
+            if(y < headArea) headPixels++;
+            else bodyPixels++;
+          }
+        }
+        
+        const proportionRatio = headPixels / (bodyPixels || 1);
+        const proportionScore = Math.max(0, 100 - Math.abs(proportionRatio - 0.8) * 100);
+        
+        // Calcolo finale del quality score
+        const qualityScore = Math.round(
+          colorScore * 0.40 +
+          saturationScore * 0.20 +
+          textureScore * 0.20 +
+          proportionScore * 0.10 +
+          contrastScore * 0.10
+        );
+        
+        // Categoria
+        let quality = 'seria';
+        if(qualityScore < 50) quality = 'meme';
+        else if(qualityScore < 75) quality = 'discutibile';
+        
+        resolve({ qualityScore, quality, metrics: { colorScore, saturationScore, textureScore, proportionScore, contrastScore } });
+      };
+      
+      img.onerror = () => resolve({ qualityScore: 0, quality: 'error', metrics: {} });
+      img.src = imageUrl;
+    });
   }
 
   // ---------- tooltip (hover su qualsiasi elemento con data-tooltip) ----------
@@ -2694,6 +2810,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     grid.style.display = 'grid';
   }
 
+  // Aggiungi i campi qualità agli item quando vengono creati
   function addItems(newItems){
     if(newItems.length === 0) return;
     const wasEmpty = items.length === 0;
@@ -2713,7 +2830,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     const category = (defaultCategoryInput.value || '').trim() || 'Senza categoria';
     addItems(arr.map(file => ({
       file, url: URL.createObjectURL(file), name: file.name, displayName: file.name,
-      category, status: 'unreviewed', modelType: null, issues: [], checked: false
+      category, status: 'unreviewed', modelType: null, issues: [], checked: false, qualityScore: undefined, qualityType: undefined
     })));
   }
   fileInput.addEventListener('change', e => { handleFiles(e.target.files); e.target.value=''; });
@@ -2731,7 +2848,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       const category = middle.length ? middle.join(' / ') : 'Senza categoria';
       return {
         file, url: URL.createObjectURL(file), name: file.name, displayName: file.name,
-        category, status: 'unreviewed', modelType: null, issues: [], checked: false
+        category, status: 'unreviewed', modelType: null, issues: [], checked: false, qualityScore: undefined, qualityType: undefined
       };
     });
     addItems(newItems);
@@ -2762,7 +2879,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         const category = middle.length ? middle.join(' / ') : 'Senza categoria';
         newItems.push({
           file: blob, url: URL.createObjectURL(blob), name: filename, displayName: filename,
-          category, status: 'unreviewed', modelType: null, issues: [], checked: false
+          category, status: 'unreviewed', modelType: null, issues: [], checked: false, qualityScore: undefined, qualityType: undefined
         });
       }
       zipStatus.textContent = `Caricate ${newItems.length} skin dallo ZIP.`;
@@ -2879,6 +2996,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     items = [];
     statusFilter = 'all';
     categoryFilter = 'all';
+    qualityFilter = 'all';
     grid.innerHTML = '';
     catchips.innerHTML = '';
     catbar.style.display = 'none';
@@ -2924,6 +3042,9 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     items.forEach((it, i) => {
       if(statusFilter !== 'all' && it.status !== statusFilter) return;
       if(categoryFilter !== 'all' && it.category !== categoryFilter) return;
+      if(qualityFilter === 'quality-seria' && (!it.qualityScore || it.qualityScore < 75)) return;
+      if(qualityFilter === 'quality-discutibile' && (!it.qualityScore || it.qualityScore < 50 || it.qualityScore >= 75)) return;
+      if(qualityFilter === 'quality-meme' && (!it.qualityScore || it.qualityScore >= 50)) return;
       out.push(i);
     });
     return out;
@@ -2938,6 +3059,22 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       card.dataset.status = it.status;
       card.style.setProperty('--card-delay', `${Math.min(pos, 30) * 16}ms`);
       const hasIssues = it.issues && it.issues.length > 0;
+      
+      // Badge qualità
+      let qualityBadge = '';
+      if(it.qualityScore !== undefined){
+        let qualityClass = 'quality-seria';
+        let qualityText = 'Seria';
+        if(it.qualityScore < 50){
+          qualityClass = 'quality-meme';
+          qualityText = 'Meme';
+        } else if(it.qualityScore < 75){
+          qualityClass = 'quality-discutibile';
+          qualityText = 'Strana';
+        }
+        qualityBadge = `<span class="quality-badge ${qualityClass}" data-tooltip="Qualità: ${it.qualityScore}/100">${qualityText}</span>`;
+      }
+      
       card.innerHTML = `
         <img src="${it.url}" alt="${it.displayName}" loading="lazy">
         <span class="cat-badge">${it.category}</span>
@@ -2946,6 +3083,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         <span class="idx">${String(i+1).padStart(3,'0')}</span>
         <span class="fname">${it.displayName}</span>
         ${it.modelType ? `<span class="model-pip ${it.modelType}">${it.modelType === 'slim' ? 'Slim' : 'Wide'}</span>` : ''}
+        ${qualityBadge}
       `;
       card.addEventListener('click', () => openViewer(i));
       grid.appendChild(card);
@@ -2962,9 +3100,20 @@ https://github.com/nodeca/pako/blob/main/LICENSE
 
   document.querySelectorAll('#filters button').forEach(btn => {
     btn.addEventListener('click', () => {
-      document.querySelectorAll('#filters button').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      statusFilter = btn.dataset.filter;
+      const filterValue = btn.dataset.filter;
+      
+      // Se è un filtro di qualità
+      if(filterValue.startsWith('quality-')){
+        document.querySelectorAll('#filters button[data-filter^="quality-"]').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        qualityFilter = filterValue;
+      } else {
+        // Se è un filtro di stato
+        document.querySelectorAll('#filters button:not([data-filter^="quality-"])').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        statusFilter = filterValue;
+      }
+      
       renderGrid();
     });
   });
@@ -3099,30 +3248,50 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     if(items.length === 0) return;
     const originalLabel = initialCheckBtn.textContent;
     initialCheckBtn.disabled = true;
-    let problemCount = 0;
+    let problemCount = 0, memeCount = 0, seriousCount = 0;
+    
     for(let i = 0; i < items.length; i++){
       const it = items[i];
       initialCheckBtn.textContent = `Verifico ${i+1} / ${items.length}…`;
+      
+      // Controlla dimensioni
       const dim = await checkImageDimensions(it.url);
       const issues = evaluateSkinIssues(dim);
+      
+      // Rileva modello slim/wide
       if(!it.modelType && dim.ok){
         it.modelType = await detectModelType(it.url);
       }
+      
+      // Analizza qualità (seria vs meme)
+      if(dim.ok){
+        const quality = await analyzeQuality(it.url);
+        it.qualityScore = quality.qualityScore;
+        it.qualityType = quality.quality;
+        
+        if(quality.quality === 'meme') memeCount++;
+        else if(quality.quality === 'seria') seriousCount++;
+      }
+      
       it.issues = issues;
       it.checked = true;
+      
       if(issues.length){
         problemCount++;
         if(it.status === 'unreviewed') it.status = 'flagged';
       }
     }
+    
     initialCheckBtn.disabled = false;
     initialCheckBtn.textContent = originalLabel;
     renderGrid();
     updateProgress();
-    if(problemCount === 0){
-      showToast('success', 'Verifica completata', `Tutte le ${items.length} skin hanno superato il controllo automatico.`);
+    
+    const message = `${seriousCount} skin serie, ${memeCount} probabili meme, ${problemCount} anomalie rilevate.`;
+    if(problemCount === 0 && memeCount === 0){
+      showToast('success', 'Verifica completata', `Tutte le ${items.length} skin sono serie e OK.`);
     } else {
-      showToast('warning', 'Verifica completata', `${problemCount} skin su ${items.length} presentano anomalie e sono state segnalate come da correggere.`);
+      showToast('warning', 'Verifica completata', message);
     }
   });
 
@@ -3295,11 +3464,12 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   });
 
   // ---------- export ----------
-  function buildReportCSV(){
-    const lines = ['categoria,nome_originale,nome_attuale,stato,modello'];
-    items.forEach(it => {
+  function buildReportCSV(onlyApproved = false){
+    const lines = ['categoria,nome_originale,nome_attuale,stato,modello,qualita'];
+    const toExport = onlyApproved ? items.filter(it => it.status === 'approved') : items;
+    toExport.forEach(it => {
       const esc = s => `"${String(s).replace(/"/g,'""')}"`;
-      lines.push([esc(it.category), esc(it.name), esc(it.displayName), statusLabel(it.status), esc(it.modelType || 'sconosciuto')].join(','));
+      lines.push([esc(it.category), esc(it.name), esc(it.displayName), statusLabel(it.status), esc(it.modelType || 'sconosciuto'), esc(it.qualityScore || 'N/A')].join(','));
     });
     return lines.join('\n');
   }
@@ -3350,9 +3520,18 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       return String(s).replace(/[\\/:*?"<>|]/g, '_').trim() || 'senza-nome';
     }
 
-    for(let i = 0; i < items.length; i++){
-      const it = items[i];
-      btn.textContent = `Comprimo ${i+1} / ${items.length}…`;
+    // Esporta SOLO le skin approvate
+    const approvedItems = items.filter(it => it.status === 'approved');
+    if(approvedItems.length === 0){
+      showToast('warning', 'Nessuna skin approvata', 'Approva almeno una skin prima di esportare.');
+      btn.disabled = false;
+      btn.textContent = originalLabel;
+      return;
+    }
+
+    for(let i = 0; i < approvedItems.length; i++){
+      const it = approvedItems[i];
+      btn.textContent = `Comprimo ${i+1} / ${approvedItems.length}…`;
 
       // radice separata per modello: stesse categorie, ma Wide e Slim non si mescolano mai
       const modelRoot = it.modelType === 'slim' ? 'Slim' : 'Wide';
@@ -3374,8 +3553,8 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       zip.file(fullPath, it.file);
     }
 
-    // includo anche il report come promemoria dentro allo zip
-    zip.file('report_controllo_skin.csv', buildReportCSV());
+    // includo anche il report (solo approvate) come promemoria dentro allo zip
+    zip.file('report_controllo_skin.csv', buildReportCSV(true));
 
     btn.textContent = 'Genero lo ZIP…';
     try{
@@ -3383,10 +3562,10 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'skin-controllate.zip';
+      a.download = 'skin-approvate.zip';
       a.click();
       URL.revokeObjectURL(url);
-      showToast('success', 'ZIP generato', `${items.length} skin esportate nelle cartelle Wide/ e Slim/.`);
+      showToast('success', 'ZIP generato', `${approvedItems.length} skin approvate esportate nelle cartelle Wide/ e Slim/.`);
     }catch(err){
       console.error('Errore generazione ZIP:', err);
       showToast('error', 'Errore ZIP', 'Non sono riuscito a generare lo ZIP. Riprova.');
