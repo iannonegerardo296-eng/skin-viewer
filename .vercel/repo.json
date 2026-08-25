@@ -1,0 +1,11 @@
+{
+  "remoteName": "origin",
+  "projects": [
+    {
+      "id": "prj_ci9RFl8QJOHecagRIYP586XaWLDq",
+      "name": "skin-viewer",
+      "directory": ".",
+      "orgId": "team_pdihJVNtvzDyAFmXbS1XxhNB"
+    }
+  ]
+}
