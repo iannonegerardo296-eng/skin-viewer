@@ -5,6 +5,32 @@
   let qualityFilter = 'all';
   let currentIndex = -1;
 
+  // ---------- tema chiaro/scuro ----------
+  // Il tema iniziale è già applicato da uno script inline nell'<head>
+  // (per evitare il flash del tema sbagliato); qui gestiamo solo il
+  // pulsante e la persistenza della scelta.
+  (function initThemeToggle(){
+    const toggle = document.getElementById('themeToggle');
+    const knob = document.getElementById('themeKnob');
+    if(!toggle || !knob) return;
+
+    function applyIcon(theme){
+      knob.textContent = theme === 'light' ? '☀️' : '🌙';
+    }
+    applyIcon(document.documentElement.getAttribute('data-theme') || 'dark');
+
+    toggle.addEventListener('click', () => {
+      const current = document.documentElement.getAttribute('data-theme') || 'dark';
+      const next = current === 'light' ? 'dark' : 'light';
+      document.documentElement.setAttribute('data-theme', next);
+      try { localStorage.setItem('skin-checker-theme', next); } catch(e){}
+      applyIcon(next);
+      if(window.gsap){
+        gsap.fromTo(knob, { rotate: -90, scale: .6 }, { rotate: 0, scale: 1, duration: .4, ease: 'back.out(2)' });
+      }
+    });
+  })();
+
   const dropzone = document.getElementById('dropzone');
   const fileInput = document.getElementById('fileInput');
   const folderInput = document.getElementById('folderInput');

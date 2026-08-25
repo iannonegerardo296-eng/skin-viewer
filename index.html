@@ -5,8 +5,19 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Banco Controllo Skin Minecraft</title>
   <link rel="stylesheet" href="css/style.css">
+  <script>
+    // Applica il tema PRIMA del render per evitare il flash del tema sbagliato
+    (function(){
+      var saved = null;
+      try { saved = localStorage.getItem('skin-checker-theme'); } catch(e){}
+      var theme = saved || (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+      document.documentElement.setAttribute('data-theme', theme);
+    })();
+  </script>
 </head>
 <body>
+
+<div class="bg-mesh"><span></span><span></span><span></span></div>
 
 <header id="topbar" style="display:none;">
   <div class="brand">
@@ -16,6 +27,10 @@
       <p class="eyebrow">Ispezione manuale</p>
     </div>
   </div>
+
+  <button class="theme-toggle" id="themeToggle" data-tooltip="Cambia tema chiaro/scuro" aria-label="Cambia tema">
+    <span class="knob" id="themeKnob">🌙</span>
+  </button>
 
   <div class="progress-wrap">
     <span id="progressLabel">0 / 0 controllate</span>
