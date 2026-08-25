@@ -1,0 +1,31 @@
+{
+  "name": "banco-controllo-skin",
+  "version": "2.0.0",
+  "description": "Applicazione web professionale per ispezionare, organizzare e controllare skin Minecraft",
+  "private": true,
+  "author": "Skin Inspector Team",
+  "license": "MIT",
+  "keywords": [
+    "minecraft",
+    "skin",
+    "inspector",
+    "3d-viewer",
+    "skin-checker"
+  ],
+  "homepage": "https://mio-skin-checker.vercel.app",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/TUO-USERNAME/mio-skin-checker.git"
+  },
+  "scripts": {
+    "dev": "python -m http.server 8000",
+    "dev:node": "npx http-server -p 8000",
+    "deploy": "vercel"
+  },
+  "devDependencies": {
+    "vercel": "^latest"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}

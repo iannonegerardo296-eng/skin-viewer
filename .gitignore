@@ -1,0 +1,31 @@
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Dependencies
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Build/cache
+.cache/
+dist/
+build/
+
+# Browser data
+.cache
+*.lnk
+
+# Temporary files
+*.tmp
+*.bak
+*~
