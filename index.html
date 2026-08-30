@@ -17,69 +17,81 @@
 </head>
 <body>
 
-<div class="bg-mesh"><span></span><span></span><span></span></div>
-
+<div class="top-sticky" id="topSticky">
 <header id="topbar" style="display:none;">
-  <div class="brand">
-    <span class="dot"></span>
-    <div>
-      <h1>Banco Controllo Skin</h1>
-      <p class="eyebrow">Ispezione manuale</p>
+  <div class="header-row header-row-top">
+    <div class="brand">
+      <span class="dot"></span>
+      <div>
+        <h1>Banco Controllo Skin</h1>
+        <p class="eyebrow">Ispezione manuale</p>
+      </div>
     </div>
-  </div>
 
-  <button class="theme-toggle" id="themeToggle" data-tooltip="Cambia tema chiaro/scuro" aria-label="Cambia tema">
-    <span class="knob" id="themeKnob">🌙</span>
-  </button>
+    <button class="theme-toggle" id="themeToggle" data-tooltip="Cambia tema chiaro/scuro" aria-label="Cambia tema">
+      <span class="knob" id="themeKnob">🌙</span>
+    </button>
 
-  <div class="progress-wrap">
-    <span id="progressLabel">0 / 0 controllate</span>
-    <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
-  </div>
+    <div class="progress-wrap">
+      <span id="progressLabel">0 / 0 controllate</span>
+      <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+    </div>
 
-  <div class="filters" id="filters">
-    <button class="active" data-filter="all" data-tooltip="Mostra tutte le skin caricate">TUTTE</button>
-    <button data-filter="unreviewed" data-tooltip="Mostra solo le skin non ancora controllate">DA FARE</button>
-    <button data-filter="approved" data-tooltip="Mostra solo le skin approvate">OK</button>
-    <button data-filter="flagged" data-tooltip="Mostra solo le skin segnalate da correggere">DA RIVEDERE</button>
-    <span style="border-right:1px solid var(--line); margin:0 8px; height:20px;"></span>
-    <button data-filter="quality-seria" data-tooltip="Mostra solo le skin senza anomalie tecniche rilevate (affidabilità 75+)">✅ OK</button>
-    <button data-filter="quality-discutibile" data-tooltip="Mostra le skin con qualche segnale debole da controllare a mano (affidabilità 40-74)">⚠️ Da verificare</button>
-    <button data-filter="quality-meme" data-tooltip="Mostra le skin con forti segnali di file rotto/placeholder (affidabilità sotto 40)">🚩 Sospette</button>
+    <span class="header-spacer"></span>
 
-  </div>
+    <button class="hero-btn" id="folderManagerBtn" aria-label="Organizza cartelle" data-tooltip="Rinomina, unisci e riordina le categorie/cartelle come preferisci">
+      <span class="hero-icon">🗂️</span>
+      <span class="hero-label">Organizza Cartelle</span>
+    </button>
 
-  <div class="checks-group" id="checksGroup">
-    <button class="toolbtn check-btn" id="dimensionCheckBtn" data-tooltip="Controlla che ogni skin abbia dimensioni valide (64×64 o multipli) e non sia corrotta">📐 Dimensioni</button>
-    <button class="toolbtn check-btn" id="detectModelsBtn" data-tooltip="Rileva il modello (slim o wide/classic) di ogni skin analizzando la texture del braccio">🧍 Slim/Wide</button>
-    <button class="toolbtn check-btn" id="anomalyCheckBtn" data-tooltip="Cerca texture quasi vuote, monocromatiche o pattern da texture mancante (probabili placeholder/file rotti)">🚩 Anomalie</button>
-    <button class="toolbtn control-center-btn" id="controlCenterBtn" data-tooltip="Apri il centro controlli: scegli quale verifica lanciare, oppure eseguile tutte insieme">
-      <span class="ccb-icon">🎛️</span> Centro Controlli
+    <button class="hero-btn" id="controlCenterBtn" aria-label="Centro controlli" data-tooltip="Apri il centro controlli: scegli quale verifica lanciare, oppure eseguile tutte insieme">
+      <span class="hero-icon">🎛️</span>
+      <span class="hero-label">Centro Controlli</span>
+      <span class="hero-badge" id="ccbBadge" hidden>0</span>
     </button>
   </div>
 
-  <div style="display:flex; gap:8px; align-items:center;">
-    <button class="toolbtn" id="exportBtn" data-tooltip="Scarica un report CSV con categoria, stato, modello ed esito dei controlli di ogni skin">Esporta report</button>
-    <button class="toolbtn" id="exportZipBtn" data-tooltip="Scarica uno ZIP con SOLO le skin approvate, organizzate in cartelle Wide/ e Slim/ con le stesse categorie">📦 Esporta ZIP</button>
-    <label class="toolbtn" for="addMoreInput" style="cursor:pointer;" data-tooltip="Aggiungi altre immagini sciolte alla sessione corrente">+ Immagini</label>
-    <input type="file" id="addMoreInput" multiple accept="image/*" style="display:none;">
-    <label class="toolbtn" for="addFolderInput" style="cursor:pointer;" data-tooltip="Aggiungi un'intera cartella: le sottocartelle diventano categorie">+ Cartella</label>
-    <input type="file" id="addFolderInput" webkitdirectory directory multiple style="display:none;">
-    <label class="toolbtn" for="addZipInput" style="cursor:pointer;" data-tooltip="Aggiungi le skin contenute in un file ZIP">+ ZIP</label>
-    <input type="file" id="addZipInput" accept=".zip" style="display:none;">
-    <label class="toolbtn" for="importCsvInput" style="cursor:pointer;" data-tooltip="Riabbina stato e nomi da un report CSV esportato in precedenza">↩ Importa CSV</label>
-    <input type="file" id="importCsvInput" accept=".csv" style="display:none;">
-    <button class="toolbtn" id="resetBtn" data-tooltip="Cancella tutte le skin caricate e ricomincia da capo">Ricomincia</button>
+  <div class="header-row header-row-bottom">
+    <div class="filters" id="filters">
+      <button class="active" data-filter="all" data-tooltip="Mostra tutte le skin caricate">TUTTE</button>
+      <button data-filter="unreviewed" data-tooltip="Mostra solo le skin non ancora controllate">DA FARE</button>
+      <button data-filter="approved" data-tooltip="Mostra solo le skin approvate">OK</button>
+      <button data-filter="flagged" data-tooltip="Mostra solo le skin segnalate da correggere">DA RIVEDERE</button>
+      <span class="filter-divider"></span>
+      <button data-filter="quality-seria" data-tooltip="Mostra solo le skin senza anomalie tecniche rilevate (affidabilità 75+)">✅ OK</button>
+      <button data-filter="quality-discutibile" data-tooltip="Mostra le skin con qualche segnale debole da controllare a mano (affidabilità 40-74)">⚠️ Da verificare</button>
+      <button data-filter="quality-meme" data-tooltip="Mostra le skin con forti segnali di file rotto/placeholder o probabile scherzo (affidabilità sotto 40)">🚩 Sospette</button>
+    </div>
+
+    <div class="actions-group">
+      <div class="action-cluster">
+        <label class="toolbtn" for="addMoreInput" style="cursor:pointer;" data-tooltip="Aggiungi altre immagini sciolte alla sessione corrente">+ Immagini</label>
+        <input type="file" id="addMoreInput" multiple accept="image/*" style="display:none;">
+        <label class="toolbtn" for="addFolderInput" style="cursor:pointer;" data-tooltip="Aggiungi un'intera cartella: le sottocartelle diventano categorie">+ Cartella</label>
+        <input type="file" id="addFolderInput" webkitdirectory directory multiple style="display:none;">
+        <label class="toolbtn" for="addZipInput" style="cursor:pointer;" data-tooltip="Aggiungi le skin contenute in un file ZIP">+ ZIP</label>
+        <input type="file" id="addZipInput" accept=".zip" style="display:none;">
+        <label class="toolbtn" for="importCsvInput" style="cursor:pointer;" data-tooltip="Riabbina stato e nomi da un report CSV esportato in precedenza">↩ Importa CSV</label>
+        <input type="file" id="importCsvInput" accept=".csv" style="display:none;">
+      </div>
+      <span class="action-divider"></span>
+      <div class="action-cluster">
+        <button class="toolbtn" id="exportBtn" data-tooltip="Scarica un report CSV con categoria, stato, modello ed esito dei controlli di ogni skin">Esporta report</button>
+        <button class="toolbtn" id="exportZipBtn" data-tooltip="Scarica uno ZIP con SOLO le skin approvate, organizzate in cartelle Wide/ e Slim/ con le stesse categorie">📦 Esporta ZIP</button>
+      </div>
+      <span class="action-divider"></span>
+      <button class="toolbtn" id="resetBtn" data-tooltip="Cancella tutte le skin caricate e ricomincia da capo">Ricomincia</button>
+    </div>
   </div>
 </header>
 
 <!-- Centro Controlli: overlay animato con GSAP -->
-<div class="control-center-overlay" id="controlCenterOverlay">
-  <div class="control-center-menu" id="controlCenterMenu">
-    <div class="ccm-header">
+<div class="app-overlay" id="controlCenterOverlay">
+  <div class="app-panel" id="controlCenterMenu">
+    <div class="app-panel-header">
       <h3>🎛️ Centro Controlli</h3>
       <p>Scegli quale verifica lanciare sulle skin caricate, oppure eseguile tutte in sequenza.</p>
-      <button class="ccm-close" id="ccmClose" aria-label="Chiudi" data-tooltip="Chiudi (Esc)">✕</button>
+      <button class="app-panel-close" id="ccmClose" aria-label="Chiudi" data-tooltip="Chiudi (Esc)">✕</button>
     </div>
     <div class="ccm-items" id="ccmItems">
       <button class="ccm-item" data-check="dimension">
@@ -102,7 +114,7 @@
         <span class="ccm-icon">🚩</span>
         <span class="ccm-text">
           <strong>Anomalie Tecniche</strong>
-          <small>Cerca texture quasi trasparenti, monocromatiche o con pattern da "texture mancante".</small>
+          <small>Cerca texture rotte/placeholder e segnali tipici di skin scherzose (es. un'immagine caotica incollata solo sul volto, tavolozze a caso).</small>
         </span>
         <span class="ccm-arrow">›</span>
       </button>
@@ -115,6 +127,24 @@
         <span class="ccm-arrow">›</span>
       </button>
     </div>
+    <div class="ccm-footer" id="ccmFooter"></div>
+  </div>
+</div>
+
+<!-- Organizza Cartelle: rinomina/unisci/riordina le categorie -->
+<div class="app-overlay" id="folderManagerOverlay">
+  <div class="app-panel" id="folderManagerPanel">
+    <div class="app-panel-header">
+      <h3>🗂️ Organizza Cartelle</h3>
+      <p>Rinomina, unisci e riordina le categorie a modo tuo. Le modifiche si applicano subito a tutte le skin coinvolte.</p>
+      <button class="app-panel-close" id="fmClose" aria-label="Chiudi" data-tooltip="Chiudi (Esc)">✕</button>
+    </div>
+    <div class="folder-panel-hint">💡 Modifica il nome e premi <b>✓</b> (o Invio) per applicare. Rinominare una cartella con il nome di un'altra <b>le unisce</b>. Le frecce riordinano come appaiono nella barra categorie.</div>
+    <div class="folder-list" id="folderList"></div>
+    <div class="folder-new-row">
+      <input type="text" id="folderNewInput" placeholder="Nome nuova cartella…" data-tooltip="Crea una cartella vuota, utile per spostarci dentro le skin in un secondo momento">
+      <button class="toolbtn" id="folderNewBtn" data-tooltip="Crea la cartella">+ Crea</button>
+    </div>
   </div>
 </div>
 
@@ -122,6 +152,8 @@
   <span class="catlabel">Categorie</span>
   <div id="catchips" style="display:flex; gap:8px;"></div>
 </div>
+</div>
+<!-- /top-sticky -->
 
 <div class="dropzone" id="dropzone">
   <div class="glyph">

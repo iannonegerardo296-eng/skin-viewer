@@ -3,6 +3,8 @@
   let statusFilter = 'all';
   let categoryFilter = 'all';
   let qualityFilter = 'all';
+  let categoryOrder = []; // ordine delle categorie deciso dall'utente
+  let nextItemUid = 1; // id stabile per item, usato per aggiornare le card senza un re-render completo
   let currentIndex = -1;
 
   // ---------- tema chiaro/scuro ----------
@@ -54,7 +56,7 @@
     return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   }
 
-  // ---------- rilevamento anomalie tecniche ----------
+  // ---------- rilevamento anomalie tecniche + segnali "meme" ----------
   // IMPORTANTE: un file skin PNG non è una "foto" del personaggio: è una
   // texture UV (un atlante di parti — testa, busto, braccia, gambe —
   // disposte in una griglia fissa). Un vecchio algoritmo che analizzava
@@ -64,14 +66,47 @@
   // molto sature o quasi monocromatiche (es. boss di lava, di ghiaccio,
   // mob custom) venivano segnalate come "meme" a torto.
   //
-  // Il nuovo controllo NON esprime giudizi estetici: cerca solo segnali
-  // tecnici concreti che un file sia rotto, vuoto o un placeholder:
-  //   1) texture quasi completamente trasparente (file vuoto/rotto)
-  //   2) pattern a scacchiera magenta/nero (la classica "texture mancante")
-  //   3) pochissimi colori su un'immagine quasi completamente opaca
-  //      (probabile bozza/placeholder, va comunque controllata a mano)
-  //   4) un unico colore che copre quasi tutta la texture (segnale debole,
-  //      può capitare anche su skin legittime molto semplici)
+  // Il controllo combina due famiglie di segnali:
+  //  A) file rotto/placeholder (oggettivo, quasi mai un falso positivo):
+  //     1) texture quasi completamente trasparente
+  //     2) pattern a scacchiera magenta/nero ("texture mancante")
+  //     3) pochissimi colori su immagine quasi interamente opaca
+  //     4) un unico colore che copre quasi tutta la texture (segnale debole)
+  //  B) possibile skin scherzosa (più soft, pesati meno, pensati per NON
+  //     penalizzare boss/mob legittimamente semplici o molto saturi):
+  //     5) il volto (regione UV fissa 8,8-16,16) ha molti più dettagli/
+  //        contrasti del resto del corpo — il classico "foto o meme
+  //        incollato sulla faccia di Steve"
+  //     6) tavolozza cromatica dispersa su moltissime tonalità diverse
+  //        senza un filo conduttore ("confetti"/arcobaleno casuale)
+  function sampleRegionStats(ctx, x, y, w, h){
+    if(w <= 0 || h <= 0) return { uniqueColors: 0, entropy: 0 };
+    const { data } = ctx.getImageData(x, y, w, h);
+    const colors = new Set();
+    let diffSum = 0, diffCount = 0;
+    for(let row = 0; row < h; row++){
+      for(let col = 0; col < w; col++){
+        const i = (row * w + col) * 4;
+        const a = data[i+3];
+        if(a < 20) continue;
+        const r = data[i], g = data[i+1], b = data[i+2];
+        colors.add(r + ',' + g + ',' + b);
+        if(col < w - 1 && data[i+7] > 20){
+          diffSum += Math.abs(r-data[i+4]) + Math.abs(g-data[i+5]) + Math.abs(b-data[i+6]);
+          diffCount++;
+        }
+        if(row < h - 1){
+          const j = i + w * 4;
+          if(data[j+3] > 20){
+            diffSum += Math.abs(r-data[j]) + Math.abs(g-data[j+1]) + Math.abs(b-data[j+2]);
+            diffCount++;
+          }
+        }
+      }
+    }
+    return { uniqueColors: colors.size, entropy: diffCount ? diffSum / diffCount : 0 };
+  }
+
   async function analyzeQuality(imageUrl){
     return new Promise(resolve => {
       const canvas = document.createElement('canvas');
@@ -89,6 +124,8 @@
         const colorMap = new Map();
         let opaqueCount = 0;
         let checkerHits = 0, checkerSamples = 0;
+        const hueBuckets = new Array(12).fill(0);
+        let hueSamples = 0;
 
         for(let i = 0; i < data.length; i += 4){
           const r = data[i], g = data[i+1], b = data[i+2], a = data[i+3];
@@ -106,6 +143,18 @@
               const y = Math.floor(pixelIndex / canvas.width);
               const expectMagenta = ((Math.floor(x / 4) + Math.floor(y / 4)) % 2 === 0);
               if((expectMagenta && isMagenta) || (!expectMagenta && isBlack)) checkerHits++;
+            }
+            // istogramma delle tonalità (per il segnale "confetti")
+            const max = Math.max(r,g,b), min = Math.min(r,g,b);
+            if(max !== min){
+              let hue;
+              if(max === r) hue = ((g-b)/(max-min)) % 6;
+              else if(max === g) hue = (b-r)/(max-min) + 2;
+              else hue = (r-g)/(max-min) + 4;
+              hue = Math.round(hue * 60);
+              if(hue < 0) hue += 360;
+              hueBuckets[Math.floor(hue / 30) % 12]++;
+              hueSamples++;
             }
           }
         }
@@ -146,6 +195,31 @@
           reasons.push('Un singolo colore copre oltre il 92% della texture');
         }
 
+        // 5) volto molto più dettagliato/caotico del resto del corpo
+        // (coordinate UV fisse: volto 8,8-16,16 · petto 20,20-28,32 —
+        // valide sia per skin 64×64 che legacy 64×32, slim o wide)
+        if(opacityRatio > 0.15 && canvas.width >= 64){
+          const scale = canvas.width / 64;
+          const head = sampleRegionStats(ctx, Math.round(8*scale), Math.round(8*scale), Math.round(8*scale), Math.round(8*scale));
+          const torso = sampleRegionStats(ctx, Math.round(20*scale), Math.round(20*scale), Math.round(8*scale), Math.round(12*scale));
+          if(head.entropy > 26 && torso.entropy > 4 && head.entropy > torso.entropy * 2.2){
+            score -= 25;
+            reasons.push('Il volto ha molti più dettagli/contrasti del resto del corpo (tipico di una foto o un meme incollato sulla faccia)');
+          } else if(head.entropy > 42 && head.uniqueColors > 30){
+            score -= 12;
+            reasons.push('Il volto presenta un pattern insolitamente denso e caotico');
+          }
+        }
+
+        // 6) tavolozza cromatica molto dispersa ("confetti"/arcobaleno casuale)
+        if(hueSamples > 60){
+          const usedBuckets = hueBuckets.filter(n => (n / hueSamples) > 0.02).length;
+          if(usedBuckets >= 9){
+            score -= 12;
+            reasons.push('Tavolozza cromatica molto eterogenea, con moltissime tonalità diverse usate in modo sparso');
+          }
+        }
+
         score = Math.max(0, Math.min(100, Math.round(score)));
 
         let quality = 'seria'; // = "OK, nessun segnale sospetto"
@@ -161,6 +235,12 @@
   }
 
   // ---------- tooltip (hover su qualsiasi elemento con data-tooltip) ----------
+  // Sui dispositivi touch non esiste un vero hover: un tap genera comunque
+  // un evento "mouseover" simulato ma non arriva mai un "mouseout" reale
+  // finché non si tocca altrove, quindi il tooltip resterebbe appiccicato
+  // sullo schermo. Li mostriamo solo se il dispositivo ha un hover fine
+  // vero (mouse/trackpad); su touch il tap esegue subito l'azione, punto.
+  const supportsHover = !!(window.matchMedia && window.matchMedia('(hover: hover) and (pointer: fine)').matches);
   let tooltipEl = null;
   let tooltipTimer = null;
   let tooltipTarget = null;
@@ -188,6 +268,7 @@
   }
 
   function showTooltip(target){
+    if(!supportsHover) return;
     const text = target.getAttribute('data-tooltip');
     if(!text) return;
     const el = ensureTooltipEl();
@@ -201,21 +282,24 @@
     tooltipTarget = null;
   }
 
-  document.addEventListener('mouseover', e => {
-    const target = e.target.closest('[data-tooltip]');
-    if(!target || target === tooltipTarget) return;
-    tooltipTarget = target;
-    clearTimeout(tooltipTimer);
-    tooltipTimer = setTimeout(() => showTooltip(target), 350);
-  });
-  document.addEventListener('mouseout', e => {
-    const target = e.target.closest('[data-tooltip]');
-    if(!target) return;
-    if(e.relatedTarget && target.contains(e.relatedTarget)) return;
-    clearTimeout(tooltipTimer);
-    hideTooltip();
-  });
+  if(supportsHover){
+    document.addEventListener('mouseover', e => {
+      const target = e.target.closest('[data-tooltip]');
+      if(!target || target === tooltipTarget) return;
+      tooltipTarget = target;
+      clearTimeout(tooltipTimer);
+      tooltipTimer = setTimeout(() => showTooltip(target), 350);
+    });
+    document.addEventListener('mouseout', e => {
+      const target = e.target.closest('[data-tooltip]');
+      if(!target) return;
+      if(e.relatedTarget && target.contains(e.relatedTarget)) return;
+      clearTimeout(tooltipTimer);
+      hideTooltip();
+    });
+  }
   document.addEventListener('mousedown', hideTooltip);
+  document.addEventListener('touchstart', hideTooltip, { passive: true });
   document.addEventListener('focusin', e => {
     const target = e.target.closest('[data-tooltip]');
     if(target) showTooltip(target);
@@ -277,6 +361,7 @@
     if(items.length > 0) revealApp();
     renderCategoryBar();
     renderGrid();
+    queueThumbnails(newItems); // genera le anteprime 3D in background, una alla volta
     if(!wasEmpty){
       showToast('success', 'Skin aggiunte', `${newItems.length} nuove skin aggiunte alla sessione.`);
     }
@@ -289,7 +374,7 @@
     const category = (defaultCategoryInput.value || '').trim() || 'Senza categoria';
     addItems(arr.map(file => ({
       file, url: URL.createObjectURL(file), name: file.name, displayName: file.name,
-      category, status: 'unreviewed', modelType: null, issues: [], checked: false, qualityScore: undefined, qualityType: undefined
+      category, status: 'unreviewed', modelType: null, issues: [], checked: false, qualityScore: undefined, qualityType: undefined, uid: nextItemUid++, previewUrl: null, previewFailed: false
     })));
   }
   fileInput.addEventListener('change', e => { handleFiles(e.target.files); e.target.value=''; });
@@ -307,7 +392,7 @@
       const category = middle.length ? middle.join(' / ') : 'Senza categoria';
       return {
         file, url: URL.createObjectURL(file), name: file.name, displayName: file.name,
-        category, status: 'unreviewed', modelType: null, issues: [], checked: false, qualityScore: undefined, qualityType: undefined
+        category, status: 'unreviewed', modelType: null, issues: [], checked: false, qualityScore: undefined, qualityType: undefined, uid: nextItemUid++, previewUrl: null, previewFailed: false
       };
     });
     addItems(newItems);
@@ -338,7 +423,7 @@
         const category = middle.length ? middle.join(' / ') : 'Senza categoria';
         newItems.push({
           file: blob, url: URL.createObjectURL(blob), name: filename, displayName: filename,
-          category, status: 'unreviewed', modelType: null, issues: [], checked: false, qualityScore: undefined, qualityType: undefined
+          category, status: 'unreviewed', modelType: null, issues: [], checked: false, qualityScore: undefined, qualityType: undefined, uid: nextItemUid++, previewUrl: null, previewFailed: false
         });
       }
       zipStatus.textContent = `Caricate ${newItems.length} skin dallo ZIP.`;
@@ -451,11 +536,16 @@
 
   document.getElementById('resetBtn').addEventListener('click', () => {
     if(!confirm('Ricominciare da capo? Tutti gli stati verranno persi.')) return;
-    items.forEach(it => URL.revokeObjectURL(it.url));
+    items.forEach(it => {
+      URL.revokeObjectURL(it.url);
+      if(it.previewUrl) URL.revokeObjectURL(it.previewUrl);
+    });
     items = [];
     statusFilter = 'all';
     categoryFilter = 'all';
     qualityFilter = 'all';
+    categoryOrder = [];
+    thumbQueue = [];
     grid.innerHTML = '';
     catchips.innerHTML = '';
     catbar.style.display = 'none';
@@ -472,8 +562,73 @@
   }
 
   function getCategories(){
-    const set = new Set(items.map(it => it.category));
-    return Array.from(set).sort((a,b) => a.localeCompare(b));
+    syncCategoryOrder();
+    return categoryOrder.slice();
+  }
+
+  // L'ordine delle categorie è deciso dall'utente (Organizza Cartelle),
+  // non più solo alfabetico: questa funzione tiene l'elenco allineato
+  // aggiungendo eventuali categorie nuove comparse tra gli item, senza
+  // però rimuovere quelle create manualmente ma ancora vuote.
+  function syncCategoryOrder(){
+    const present = new Set(items.map(it => it.category));
+    present.forEach(cat => {
+      if(!categoryOrder.includes(cat)) categoryOrder.push(cat);
+    });
+  }
+
+  function renameCategory(oldName, newName){
+    newName = newName.trim();
+    if(!newName || newName === oldName) return false;
+
+    const merging = categoryOrder.includes(newName) || items.some(it => it.category === newName);
+
+    items.forEach(it => { if(it.category === oldName) it.category = newName; });
+
+    const idx = categoryOrder.indexOf(oldName);
+    if(idx !== -1){
+      if(categoryOrder.includes(newName)){
+        categoryOrder.splice(idx, 1);
+      } else {
+        categoryOrder[idx] = newName;
+      }
+    } else if(!categoryOrder.includes(newName)){
+      categoryOrder.push(newName);
+    }
+
+    if(categoryFilter === oldName) categoryFilter = newName;
+
+    renderCategoryBar();
+    renderGrid();
+    if(viewer.classList.contains('open')) populateCategorySelect();
+
+    return merging;
+  }
+
+  function moveCategoryOrder(name, dir){
+    syncCategoryOrder();
+    const idx = categoryOrder.indexOf(name);
+    if(idx === -1) return;
+    const swapWith = idx + dir;
+    if(swapWith < 0 || swapWith >= categoryOrder.length) return;
+    const tmp = categoryOrder[idx];
+    categoryOrder[idx] = categoryOrder[swapWith];
+    categoryOrder[swapWith] = tmp;
+    renderCategoryBar();
+  }
+
+  function createEmptyCategory(name){
+    name = String(name || '').trim();
+    if(!name) return false;
+    syncCategoryOrder();
+    if(categoryOrder.includes(name)){
+      showToast('warning', 'Cartella già esistente', `"${name}" c'è già.`);
+      return false;
+    }
+    categoryOrder.push(name);
+    renderCategoryBar();
+    if(viewer.classList.contains('open')) populateCategorySelect();
+    return true;
   }
 
   function renderCategoryBar(){
@@ -516,6 +671,7 @@
       const card = document.createElement('div');
       card.className = 'card';
       card.dataset.status = it.status;
+      card.dataset.uid = it.uid;
       card.style.setProperty('--card-delay', `${Math.min(pos, 30) * 16}ms`);
       const hasIssues = it.issues && it.issues.length > 0;
 
@@ -538,7 +694,7 @@
       }
 
       card.innerHTML = `
-        <img src="${it.url}" alt="${it.displayName}" loading="lazy">
+        <img src="${it.previewUrl || it.url}" alt="${it.displayName}" loading="lazy">
         <span class="cat-badge">${it.category}</span>
         <span class="status-pip"></span>
         ${hasIssues ? `<span class="issue-pip" data-tooltip="${escapeAttr(it.issues.join(' • '))}">⚠</span>` : ''}
@@ -551,6 +707,44 @@
       grid.appendChild(card);
     });
     updateProgress();
+    updateControlCenterMeta();
+  }
+
+  // Tiene sincronizzati il badge sul pulsante e il riepilogo nel menu
+  // del Centro Controlli con l'ultimo stato noto delle skin caricate.
+  function updateControlCenterMeta(){
+    const badge = document.getElementById('ccbBadge');
+    const footer = document.getElementById('ccmFooter');
+    if(!badge && !footer) return;
+
+    const problemCount = items.filter(it => (it.issues && it.issues.length) || it.qualityType === 'meme').length;
+
+    if(badge){
+      if(problemCount > 0){
+        badge.textContent = problemCount > 99 ? '99+' : String(problemCount);
+        badge.hidden = false;
+      } else {
+        badge.hidden = true;
+      }
+    }
+
+    if(footer){
+      if(items.length === 0){
+        footer.textContent = '';
+      } else {
+        const checkedCount = items.filter(it => it.checked).length;
+        const modelDetected = items.filter(it => it.modelType).length;
+        if(checkedCount === 0 && modelDetected === 0){
+          footer.textContent = 'Nessuna verifica ancora eseguita su questa sessione.';
+        } else {
+          const parts = [];
+          parts.push(`${checkedCount}/${items.length} dimensioni verificate`);
+          parts.push(`${modelDetected}/${items.length} modello rilevato`);
+          parts.push(problemCount ? `${problemCount} con anomalie/segnalazioni` : 'nessuna anomalia rilevata');
+          footer.textContent = `Ultimo stato: ${parts.join(' · ')}.`;
+        }
+      }
+    }
   }
 
   function updateProgress(){
@@ -626,7 +820,103 @@
     return skinViewer;
   }
 
-  // ---------- rilevamento modello slim/wide ----------
+  // ---------- anteprime 3D nella griglia ----------
+  // Invece del PNG piatto, ogni card mostra uno screenshot renderizzato
+  // in 3D della skin. Un solo canvas nascosto e riusato in sequenza per
+  // tutte le skin (mai uno per card: con centinaia di skin si esaurirebbero
+  // i contesti WebGL che il browser concede). Ogni scatto viene fatto una
+  // sola volta e messo in cache su it.previewUrl; se WebGL non è
+  // disponibile, si ricade silenziosamente sul PNG piatto di sempre.
+  let thumbViewer = null;
+  let thumbCanvas = null;
+  let thumbGenerationDisabled = false;
+
+  function ensureThumbViewer(){
+    if(thumbViewer) return thumbViewer;
+    thumbCanvas = document.createElement('canvas');
+    thumbCanvas.width = 176;
+    thumbCanvas.height = 176;
+    thumbCanvas.style.cssText = 'position:fixed; left:-9999px; top:-9999px; pointer-events:none;';
+    document.body.appendChild(thumbCanvas);
+    thumbViewer = new skinview3d.SkinViewer({
+      canvas: thumbCanvas,
+      width: 176,
+      height: 176,
+      preserveDrawingBuffer: true, // necessario per poter catturare il canvas con toBlob
+    });
+    thumbViewer.fov = 50;
+    thumbViewer.zoom = 0.64; // più "zoomato indietro" del viewer principale: qui la figura è intera, non solo il busto
+    thumbViewer.background = null; // trasparente, si fonde con lo sfondo della card
+    thumbViewer.playerObject.rotation.y = -0.5; // leggero 3/4 invece di un frontale piatto
+    return thumbViewer;
+  }
+
+  function waitTwoFrames(){
+    return new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+  }
+
+  async function renderSkinThumbnail(it){
+    if(thumbGenerationDisabled) return null;
+    let tv;
+    try{
+      tv = ensureThumbViewer();
+    }catch(err){
+      console.error('Anteprime 3D non disponibili (WebGL mancante?):', err);
+      thumbGenerationDisabled = true;
+      return null;
+    }
+    try{
+      await tv.loadSkin(it.url, { model: 'auto-detect' });
+      await waitTwoFrames();
+      const blob = await new Promise(resolve => thumbCanvas.toBlob(resolve, 'image/png'));
+      return blob ? URL.createObjectURL(blob) : null;
+    }catch(err){
+      console.error('Errore generazione anteprima 3D per', it.name, err);
+      return null;
+    }
+  }
+
+  function updateCardImage(it){
+    if(!it.previewUrl) return;
+    const img = grid.querySelector(`.card[data-uid="${it.uid}"] img`);
+    if(img){
+      img.classList.add('swap');
+      img.src = it.previewUrl;
+      img.onload = () => img.classList.remove('swap');
+    }
+    const filmImg = filmstrip.querySelector(`img[data-uid="${it.uid}"]`);
+    if(filmImg) filmImg.src = it.previewUrl;
+  }
+
+  // coda: le skin passano una alla volta sull'unico canvas condiviso,
+  // così più import consecutivi (o import mentre uno precedente è ancora
+  // in corso) non si accavallano sulla stessa istanza
+  let thumbQueue = [];
+  let thumbQueueRunning = false;
+
+  function queueThumbnails(newItems){
+    if(thumbGenerationDisabled) return;
+    thumbQueue.push(...newItems);
+    if(!thumbQueueRunning) runThumbQueue();
+  }
+
+  async function runThumbQueue(){
+    thumbQueueRunning = true;
+    while(thumbQueue.length){
+      const it = thumbQueue.shift();
+      if(it.previewUrl || it.previewFailed || thumbGenerationDisabled) continue;
+      const url = await renderSkinThumbnail(it);
+      if(url){
+        it.previewUrl = url;
+        updateCardImage(it);
+      } else {
+        it.previewFailed = true;
+      }
+    }
+    thumbQueueRunning = false;
+  }
+
+
   // Usa lo stesso rilevatore integrato in skinview3d (analisi dei pixel
   // trasparenti sulle braccia) così il risultato coincide sempre con
   // quello mostrato nel visualizzatore 3D quando apri una singola skin.
@@ -804,15 +1094,39 @@
     }
   }
 
-  // ---------- pulsanti dei singoli controlli ----------
-  const detectModelsBtn = document.getElementById('detectModelsBtn');
-  detectModelsBtn.addEventListener('click', () => runModelCheck(detectModelsBtn));
+  // ---------- overlay/pannello condivisi (Centro Controlli + Organizza Cartelle) ----------
+  function openAppPanel(overlay, panel, staggerItems){
+    overlay.style.display = 'flex';
+    if(window.gsap){
+      const targets = (staggerItems && staggerItems.length) ? staggerItems : [];
+      gsap.killTweensOf([overlay, panel, ...targets]);
+      gsap.set(overlay, { opacity: 0 });
+      gsap.set(panel, { opacity: 0, scale: 0.92, y: 18 });
+      if(targets.length) gsap.set(targets, { opacity: 0, y: 14 });
+      gsap.to(overlay, { opacity: 1, duration: 0.2, ease: 'power2.out' });
+      gsap.to(panel, { opacity: 1, scale: 1, y: 0, duration: 0.32, ease: 'back.out(1.7)' });
+      if(targets.length) gsap.to(targets, { opacity: 1, y: 0, duration: 0.28, stagger: 0.05, delay: 0.08, ease: 'power2.out' });
+    } else {
+      overlay.classList.add('visible');
+    }
+  }
 
-  const dimensionCheckBtn = document.getElementById('dimensionCheckBtn');
-  dimensionCheckBtn.addEventListener('click', () => runDimensionCheck(dimensionCheckBtn));
+  function closeAppPanel(overlay, panel, onDone){
+    if(window.gsap){
+      gsap.to(panel, { opacity: 0, scale: 0.94, y: 10, duration: 0.15, ease: 'power1.in' });
+      gsap.to(overlay, {
+        opacity: 0, duration: 0.16, ease: 'power1.in',
+        onComplete: () => { overlay.style.display = 'none'; if(onDone) onDone(); }
+      });
+    } else {
+      overlay.style.display = 'none';
+      if(onDone) onDone();
+    }
+  }
 
-  const anomalyCheckBtn = document.getElementById('anomalyCheckBtn');
-  anomalyCheckBtn.addEventListener('click', () => runAnomalyCheck(anomalyCheckBtn));
+  function isAnyPanelOpen(){
+    return controlCenterOverlay.style.display === 'flex' || folderManagerOverlay.style.display === 'flex';
+  }
 
   // ---------- Centro Controlli: menu animato con GSAP ----------
   const controlCenterBtn = document.getElementById('controlCenterBtn');
@@ -820,61 +1134,103 @@
   const controlCenterMenu = document.getElementById('controlCenterMenu');
   const ccmItems = Array.from(document.querySelectorAll('.ccm-item'));
 
-  function openControlCenter(){
-    controlCenterOverlay.style.display = 'flex';
-    if(window.gsap){
-      gsap.killTweensOf([controlCenterOverlay, controlCenterMenu, ccmItems]);
-      gsap.set(controlCenterOverlay, { opacity: 0 });
-      gsap.set(controlCenterMenu, { opacity: 0, scale: 0.92, y: 18 });
-      gsap.set(ccmItems, { opacity: 0, y: 14 });
-      gsap.to(controlCenterOverlay, { opacity: 1, duration: 0.22, ease: 'power2.out' });
-      gsap.to(controlCenterMenu, { opacity: 1, scale: 1, y: 0, duration: 0.36, ease: 'back.out(1.7)' });
-      gsap.to(ccmItems, { opacity: 1, y: 0, duration: 0.32, stagger: 0.06, delay: 0.1, ease: 'power2.out' });
-    } else {
-      controlCenterOverlay.classList.add('visible');
-    }
-  }
-
-  function closeControlCenter(onDone){
-    if(window.gsap){
-      gsap.to(controlCenterMenu, { opacity: 0, scale: 0.94, y: 10, duration: 0.16, ease: 'power1.in' });
-      gsap.to(controlCenterOverlay, {
-        opacity: 0, duration: 0.18, ease: 'power1.in',
-        onComplete: () => {
-          controlCenterOverlay.style.display = 'none';
-          if(onDone) onDone();
-        }
-      });
-    } else {
-      controlCenterOverlay.style.display = 'none';
-      if(onDone) onDone();
-    }
-  }
-
   controlCenterBtn.addEventListener('click', () => {
     if(items.length === 0){
       showToast('warning', 'Nessuna skin caricata', 'Carica prima delle skin, poi apri il centro controlli.');
       return;
     }
-    openControlCenter();
+    openAppPanel(controlCenterOverlay, controlCenterMenu, ccmItems);
   });
-  document.getElementById('ccmClose').addEventListener('click', () => closeControlCenter());
+  document.getElementById('ccmClose').addEventListener('click', () => closeAppPanel(controlCenterOverlay, controlCenterMenu));
   controlCenterOverlay.addEventListener('click', e => {
-    if(e.target === controlCenterOverlay) closeControlCenter();
-  });
-  document.addEventListener('keydown', e => {
-    if(e.key === 'Escape' && controlCenterOverlay.style.display === 'flex') closeControlCenter();
+    if(e.target === controlCenterOverlay) closeAppPanel(controlCenterOverlay, controlCenterMenu);
   });
   ccmItems.forEach(btn => {
     btn.addEventListener('click', () => {
       const check = btn.dataset.check;
-      closeControlCenter(() => {
+      closeAppPanel(controlCenterOverlay, controlCenterMenu, () => {
         if(check === 'dimension') runDimensionCheck(controlCenterBtn);
         else if(check === 'model') runModelCheck(controlCenterBtn);
         else if(check === 'anomaly') runAnomalyCheck(controlCenterBtn);
         else if(check === 'all') runAllChecks(controlCenterBtn);
       });
     });
+  });
+
+  // ---------- Organizza Cartelle: rinomina / unisci / riordina categorie ----------
+  const folderManagerBtn = document.getElementById('folderManagerBtn');
+  const folderManagerOverlay = document.getElementById('folderManagerOverlay');
+  const folderManagerPanel = document.getElementById('folderManagerPanel');
+  const folderList = document.getElementById('folderList');
+
+  function renderFolderManager(){
+    syncCategoryOrder();
+    folderList.innerHTML = '';
+    categoryOrder.forEach((cat, idx) => {
+      const count = items.filter(it => it.category === cat).length;
+      const row = document.createElement('div');
+      row.className = 'folder-row';
+      row.innerHTML = `
+        <div class="folder-order">
+          <button type="button" data-dir="-1" ${idx === 0 ? 'disabled' : ''} data-tooltip="Sposta su">▲</button>
+          <button type="button" data-dir="1" ${idx === categoryOrder.length - 1 ? 'disabled' : ''} data-tooltip="Sposta giù">▼</button>
+        </div>
+        <span class="folder-icon">📁</span>
+        <input type="text" value="${escapeAttr(cat)}" data-tooltip="Rinomina questa cartella (Invio per applicare)">
+        <span class="folder-count">${count}</span>
+        <button type="button" class="folder-apply" data-tooltip="Applica la rinomina">✓</button>
+      `;
+      const input = row.querySelector('input');
+      const applyBtn = row.querySelector('.folder-apply');
+      const original = cat;
+      const markDirty = () => row.classList.toggle('dirty', input.value.trim() !== '' && input.value.trim() !== original);
+      input.addEventListener('input', markDirty);
+      input.addEventListener('keydown', e => { if(e.key === 'Enter'){ e.preventDefault(); applyRename(); } });
+      function applyRename(){
+        const newName = input.value.trim();
+        if(!newName || newName === original) return;
+        const merged = renameCategory(original, newName);
+        renderFolderManager();
+        showToast('success', merged ? 'Cartelle unite' : 'Cartella rinominata',
+          merged ? `"${original}" è stata unita a "${newName}".` : `Ora si chiama "${newName}".`);
+      }
+      applyBtn.addEventListener('click', applyRename);
+      row.querySelectorAll('.folder-order button').forEach(btn => {
+        btn.addEventListener('click', () => moveCategoryOrder(original, parseInt(btn.dataset.dir, 10)));
+      });
+      folderList.appendChild(row);
+    });
+  }
+
+  folderManagerBtn.addEventListener('click', () => {
+    if(items.length === 0){
+      showToast('warning', 'Nessuna skin caricata', 'Carica prima delle skin, poi organizza le cartelle.');
+      return;
+    }
+    renderFolderManager();
+    openAppPanel(folderManagerOverlay, folderManagerPanel, Array.from(folderList.querySelectorAll('.folder-row')));
+  });
+  document.getElementById('fmClose').addEventListener('click', () => closeAppPanel(folderManagerOverlay, folderManagerPanel));
+  folderManagerOverlay.addEventListener('click', e => {
+    if(e.target === folderManagerOverlay) closeAppPanel(folderManagerOverlay, folderManagerPanel);
+  });
+
+  const folderNewInput = document.getElementById('folderNewInput');
+  const folderNewBtn = document.getElementById('folderNewBtn');
+  folderNewBtn.addEventListener('click', () => {
+    if(createEmptyCategory(folderNewInput.value)){
+      const created = folderNewInput.value.trim();
+      folderNewInput.value = '';
+      renderFolderManager();
+      showToast('success', 'Cartella creata', `"${created}" è pronta: assegnale delle skin dal visualizzatore.`);
+    }
+  });
+  folderNewInput.addEventListener('keydown', e => { if(e.key === 'Enter'){ e.preventDefault(); folderNewBtn.click(); } });
+
+  document.addEventListener('keydown', e => {
+    if(e.key !== 'Escape') return;
+    if(controlCenterOverlay.style.display === 'flex') closeAppPanel(controlCenterOverlay, controlCenterMenu);
+    else if(folderManagerOverlay.style.display === 'flex') closeAppPanel(folderManagerOverlay, folderManagerPanel);
   });
 
   function openViewer(index){
@@ -976,7 +1332,8 @@
     filmstrip.innerHTML = '';
     items.forEach((it, i) => {
       const img = document.createElement('img');
-      img.src = it.url;
+      img.src = it.previewUrl || it.url;
+      img.dataset.uid = it.uid;
       img.className = i === currentIndex ? 'active' : '';
       img.dataset.tooltip = `${it.displayName} · ${it.category}`;
       img.addEventListener('click', () => { currentIndex = i; renderStage(); renderFilmstrip(); });
