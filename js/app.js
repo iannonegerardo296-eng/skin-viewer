@@ -17,7 +17,9 @@
     if(!toggle || !knob) return;
 
     function applyIcon(theme){
-      knob.textContent = theme === 'light' ? '☀️' : '🌙';
+      knob.innerHTML = theme === 'light'
+        ? '<span class="icon icon-sun"></span>'
+        : '<span class="icon icon-moon"></span>';
     }
     applyIcon(document.documentElement.getAttribute('data-theme') || 'dark');
 
@@ -322,14 +324,14 @@
     const stack = ensureToastStack();
     const toast = document.createElement('div');
     toast.className = `toast toast-${kind}`;
-    const icon = kind === 'success' ? '✓' : kind === 'warning' ? '⚠' : kind === 'error' ? '✕' : 'ℹ';
+    const iconName = kind === 'success' ? 'icon-check' : kind === 'warning' ? 'icon-warning' : kind === 'error' ? 'icon-x' : 'icon-info';
     toast.innerHTML = `
-      <span class="toast-icon">${icon}</span>
+      <span class="toast-icon"><span class="icon ${iconName}"></span></span>
       <div class="toast-body">
         <div class="toast-title">${escapeAttr(title)}</div>
         ${message ? `<div class="toast-msg">${escapeAttr(message)}</div>` : ''}
       </div>
-      <button class="toast-close" aria-label="Chiudi notifica">✕</button>
+      <button class="toast-close" aria-label="Chiudi notifica"><span class="icon icon-x"></span></button>
     `;
     stack.appendChild(toast);
     requestAnimationFrame(() => requestAnimationFrame(() => toast.classList.add('show')));
@@ -360,7 +362,7 @@
     items.push(...newItems);
     if(items.length > 0) revealApp();
     renderCategoryBar();
-    renderGrid();
+    renderGrid(true); // qui sì: sono item davvero nuovi, l'ingresso a scaglioni ha senso
     queueThumbnails(newItems); // genera le anteprime 3D in background, una alla volta
     if(!wasEmpty){
       showToast('success', 'Skin aggiunte', `${newItems.length} nuove skin aggiunte alla sessione.`);
@@ -664,15 +666,21 @@
     return out;
   }
 
-  function renderGrid(){
+  // animate=true SOLO quando compaiono item nuovi (dopo un import): un
+  // filtro cliccato, un check completato o un rename di categoria non
+  // aggiungono nulla di nuovo, quindi non serve far ripartire l'ingresso
+  // a scaglioni su centinaia di card — è il motivo più concreto di lag
+  // percepito su collezioni grandi, perché il costo non è l'animazione
+  // in sé ma il fatto che venga richiesta su tutte le card insieme.
+  function renderGrid(animate = false){
     grid.innerHTML = '';
     visibleIndices().forEach((i, pos) => {
       const it = items[i];
       const card = document.createElement('div');
-      card.className = 'card';
+      card.className = animate ? 'card' : 'card no-anim';
       card.dataset.status = it.status;
       card.dataset.uid = it.uid;
-      card.style.setProperty('--card-delay', `${Math.min(pos, 30) * 16}ms`);
+      if(animate) card.style.setProperty('--card-delay', `${Math.min(pos, 24) * 14}ms`);
       const hasIssues = it.issues && it.issues.length > 0;
 
       // Badge affidabilità (esito del controllo anomalie)
@@ -697,7 +705,7 @@
         <img src="${it.previewUrl || it.url}" alt="${it.displayName}" loading="lazy">
         <span class="cat-badge">${it.category}</span>
         <span class="status-pip"></span>
-        ${hasIssues ? `<span class="issue-pip" data-tooltip="${escapeAttr(it.issues.join(' • '))}">⚠</span>` : ''}
+        ${hasIssues ? `<span class="issue-pip" data-tooltip="${escapeAttr(it.issues.join(' • '))}"><span class="icon icon-warning"></span></span>` : ''}
         <span class="idx">${String(i+1).padStart(3,'0')}</span>
         <span class="fname">${it.displayName}</span>
         ${it.modelType ? `<span class="model-pip ${it.modelType}">${it.modelType === 'slim' ? 'Slim' : 'Wide'}</span>` : ''}
@@ -1175,10 +1183,10 @@
           <button type="button" data-dir="-1" ${idx === 0 ? 'disabled' : ''} data-tooltip="Sposta su">▲</button>
           <button type="button" data-dir="1" ${idx === categoryOrder.length - 1 ? 'disabled' : ''} data-tooltip="Sposta giù">▼</button>
         </div>
-        <span class="folder-icon">📁</span>
+        <span class="folder-icon"><span class="icon icon-folder"></span></span>
         <input type="text" value="${escapeAttr(cat)}" data-tooltip="Rinomina questa cartella (Invio per applicare)">
         <span class="folder-count">${count}</span>
-        <button type="button" class="folder-apply" data-tooltip="Applica la rinomina">✓</button>
+        <button type="button" class="folder-apply" data-tooltip="Applica la rinomina"><span class="icon icon-check"></span></button>
       `;
       const input = row.querySelector('input');
       const applyBtn = row.querySelector('.folder-apply');
