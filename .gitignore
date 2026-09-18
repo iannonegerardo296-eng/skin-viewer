@@ -21,8 +21,9 @@ yarn-error.log
 dist/
 build/
 
-# Browser data
+# Browser and local database data
 .cache
+data/
 *.lnk
 
 # Temporary files

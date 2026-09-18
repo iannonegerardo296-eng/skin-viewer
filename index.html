@@ -1,230 +1,140 @@
 <!DOCTYPE html>
-<html lang="it">
+<html lang="it" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Banco Controllo Skin Minecraft</title>
-  <link rel="stylesheet" href="css/style.css">
+  <meta name="theme-color" content="#090c13">
+  <title>Skin Control Center</title>
+  <link rel="stylesheet" href="css/dashboard.css">
   <script>
-    // Applica il tema PRIMA del render per evitare il flash del tema sbagliato
-    (function(){
-      var saved = null;
-      try { saved = localStorage.getItem('skin-checker-theme'); } catch(e){}
-      var theme = saved || (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
-      document.documentElement.setAttribute('data-theme', theme);
+    (() => {
+      try {
+        const saved = localStorage.getItem('skin-checker-theme');
+        document.documentElement.dataset.theme = saved || (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+      } catch (_) {}
     })();
   </script>
 </head>
 <body>
+  <div class="ambient ambient-one"></div>
+  <div class="ambient ambient-two"></div>
 
-<div class="top-sticky" id="topSticky">
-<header id="topbar" style="display:none;">
-  <div class="header-row header-row-top">
-    <div class="brand">
-      <span class="dot"></span>
-      <div>
-        <h1>Banco Controllo Skin</h1>
-        <p class="eyebrow">Ispezione manuale</p>
+  <section class="auth-view" id="authView">
+    <div class="auth-visual">
+      <div class="brand-lockup">
+        <span class="brand-mark"><i></i><i></i><i></i></span>
+        <span>SKIN CONTROL <b>/</b> CENTER</span>
+      </div>
+      <div class="auth-visual-copy">
+        <span class="eyebrow">LOCAL OPERATIONS SUITE · 03</span>
+        <h1>Metti ordine<br><em>nel tuo catalogo.</em></h1>
+        <p>Un workspace per importare, controllare e curare skin Minecraft con la precisione di un pannello operativo.</p>
+      </div>
+      <div class="visual-orbit" aria-hidden="true">
+        <div class="orbit orbit-a"></div><div class="orbit orbit-b"></div>
+        <div class="orbit-core"><span>SC</span><small>LOCAL DB</small></div>
+      </div>
+      <div class="auth-visual-footer"><span><b class="status-dot"></b> Database locale protetto</span><span>v3.0 / ADMIN EDITION</span></div>
+    </div>
+    <div class="auth-panel-wrap">
+      <div class="auth-panel">
+        <div class="mobile-brand brand-lockup"><span class="brand-mark"><i></i><i></i><i></i></span><span>SKIN CONTROL <b>/</b> CENTER</span></div>
+        <div class="auth-heading">
+          <span class="eyebrow" id="authEyebrow">WELCOME BACK</span>
+          <h2 id="authTitle">Accedi al workspace</h2>
+          <p id="authSubtitle">Continua da dove avevi lasciato la tua libreria.</p>
+        </div>
+        <div class="auth-tabs" role="tablist">
+          <button class="auth-tab active" type="button" data-auth-mode="login">Accedi</button>
+          <button class="auth-tab" type="button" data-auth-mode="register">Crea account</button>
+        </div>
+        <form id="loginForm" class="auth-form">
+          <label>Username<input name="username" autocomplete="username" placeholder="accountadmin" required></label>
+          <label>Password<input name="password" type="password" autocomplete="current-password" placeholder="••••••••" required></label>
+          <button class="primary-action" type="submit"><span>Entra nel centro</span><b>↗</b></button>
+        </form>
+        <form id="registerForm" class="auth-form" hidden>
+          <label>Username<input name="username" autocomplete="username" placeholder="il_tuo_nome" required minlength="3"></label>
+          <label>Email <small>(opzionale)</small><input name="email" type="email" autocomplete="email" placeholder="nome@email.com"></label>
+          <label>Password<input name="password" type="password" autocomplete="new-password" placeholder="minimo 8 caratteri" required minlength="8"></label>
+          <button class="primary-action" type="submit"><span>Crea il mio account</span><b>↗</b></button>
+        </form>
+        <div class="auth-message" id="authMessage" role="status" aria-live="polite"></div>
+        <div class="auth-note"><span class="lock-icon">⌁</span> I dati restano nel database locale dell'istanza.</div>
       </div>
     </div>
+  </section>
 
-    <button class="theme-toggle" id="themeToggle" data-tooltip="Cambia tema chiaro/scuro" aria-label="Cambia tema">
-      <span class="knob" id="themeKnob"><span class="icon icon-moon"></span></span>
-    </button>
-
-    <div class="progress-wrap">
-      <span id="progressLabel">0 / 0 controllate</span>
-      <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
-    </div>
-
-    <span class="header-spacer"></span>
-
-    <button class="hero-btn" id="folderManagerBtn" aria-label="Organizza cartelle" data-tooltip="Rinomina, unisci e riordina le categorie/cartelle come preferisci">
-      <span class="hero-icon"><span class="icon icon-folder"></span></span>
-      <span class="hero-label">Organizza Cartelle</span>
-    </button>
-
-    <button class="hero-btn" id="controlCenterBtn" aria-label="Centro controlli" data-tooltip="Apri il centro controlli: scegli quale verifica lanciare, oppure eseguile tutte insieme">
-      <span class="hero-icon"><span class="icon icon-controls"></span></span>
-      <span class="hero-label">Centro Controlli</span>
-      <span class="hero-badge" id="ccbBadge" hidden>0</span>
-    </button>
-  </div>
-
-  <div class="header-row header-row-bottom">
-    <div class="filters" id="filters">
-      <button class="active" data-filter="all" data-tooltip="Mostra tutte le skin caricate">TUTTE</button>
-      <button data-filter="unreviewed" data-tooltip="Mostra solo le skin non ancora controllate">DA FARE</button>
-      <button data-filter="approved" data-tooltip="Mostra solo le skin approvate">OK</button>
-      <button data-filter="flagged" data-tooltip="Mostra solo le skin segnalate da correggere">DA RIVEDERE</button>
-      <span class="filter-divider"></span>
-      <button data-filter="quality-seria" data-tooltip="Mostra solo le skin senza anomalie tecniche rilevate (affidabilità 75+)"><span class="icon icon-checklist"></span> OK</button>
-      <button data-filter="quality-discutibile" data-tooltip="Mostra le skin con qualche segnale debole da controllare a mano (affidabilità 40-74)"><span class="icon icon-warning"></span> Da verificare</button>
-      <button data-filter="quality-meme" data-tooltip="Mostra le skin con forti segnali di file rotto/placeholder o probabile scherzo (affidabilità sotto 40)"><span class="icon icon-flag"></span> Sospette</button>
-    </div>
-
-    <div class="actions-group">
-      <div class="action-cluster">
-        <label class="toolbtn" for="addMoreInput" style="cursor:pointer;" data-tooltip="Aggiungi altre immagini sciolte alla sessione corrente">+ Immagini</label>
-        <input type="file" id="addMoreInput" multiple accept="image/*" style="display:none;">
-        <label class="toolbtn" for="addFolderInput" style="cursor:pointer;" data-tooltip="Aggiungi un'intera cartella: le sottocartelle diventano categorie">+ Cartella</label>
-        <input type="file" id="addFolderInput" webkitdirectory directory multiple style="display:none;">
-        <label class="toolbtn" for="addZipInput" style="cursor:pointer;" data-tooltip="Aggiungi le skin contenute in un file ZIP">+ ZIP</label>
-        <input type="file" id="addZipInput" accept=".zip" style="display:none;">
-        <label class="toolbtn" for="importCsvInput" style="cursor:pointer;" data-tooltip="Riabbina stato e nomi da un report CSV esportato in precedenza"><span class="icon icon-undo"></span> Importa CSV</label>
-        <input type="file" id="importCsvInput" accept=".csv" style="display:none;">
+  <section class="app-shell" id="appShell" hidden>
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-brand brand-lockup"><span class="brand-mark"><i></i><i></i><i></i></span><span>SKIN CONTROL <b>/</b><small>CENTER</small></span></div>
+      <div class="sidebar-context"><span class="status-dot"></span><div><b>Workspace locale</b><small>Operativo · SQLite</small></div></div>
+      <nav class="main-nav" aria-label="Navigazione principale">
+        <span class="nav-caption">Workspace</span>
+        <button class="nav-item active" data-route="overview"><span class="nav-icon">⌂</span><span>Overview</span><kbd>01</kbd></button>
+        <button class="nav-item" data-route="catalog"><span class="nav-icon">▦</span><span>Catalogo skin</span><kbd>02</kbd></button>
+        <button class="nav-item" data-route="review"><span class="nav-icon">◈</span><span>Revisore 3D</span><kbd>↗</kbd></button>
+        <span class="nav-caption admin-only">Amministrazione</span>
+        <button class="nav-item admin-only" data-route="accounts"><span class="nav-icon">◎</span><span>Account</span><kbd>03</kbd></button>
+        <button class="nav-item admin-only" data-route="activity"><span class="nav-icon">≋</span><span>Activity log</span><kbd>04</kbd></button>
+      </nav>
+      <div class="sidebar-bottom">
+        <button class="nav-item" data-route="account"><span class="nav-icon">⚙</span><span>Il mio account</span></button>
+        <div class="sidebar-user"><span class="avatar" id="sidebarAvatar">A</span><div><b id="sidebarUsername">accountadmin</b><small id="sidebarRole">Administrator</small></div><button id="logoutButton" aria-label="Esci">↗</button></div>
       </div>
-      <span class="action-divider"></span>
-      <div class="action-cluster">
-        <button class="toolbtn" id="exportBtn" data-tooltip="Scarica un report CSV con categoria, stato, modello ed esito dei controlli di ogni skin">Esporta report</button>
-        <button class="toolbtn" id="exportZipBtn" data-tooltip="Scarica uno ZIP con SOLO le skin approvate, organizzate in cartelle Wide/ e Slim/ con le stesse categorie"><span class="icon icon-archive"></span> Esporta ZIP</button>
+    </aside>
+
+    <main class="workspace">
+      <header class="workspace-header">
+        <div class="breadcrumbs"><span>CONTROL CENTER</span><b>/</b><strong id="pageTitle">Overview</strong></div>
+        <div class="header-tools">
+          <a class="header-link" href="review.html"><span>Apri revisore</span><b>↗</b></a>
+          <button class="icon-button" id="themeButton" aria-label="Cambia tema">◐</button>
+          <button class="profile-trigger" id="profileTrigger"><span class="avatar small" id="headerAvatar">A</span><span id="headerUsername">admin</span><b>⌄</b></button>
+        </div>
+      </header>
+
+      <div class="page-stack">
+        <section class="dashboard-page page-enter" data-page="overview">
+          <div class="page-intro">
+            <div><span class="eyebrow">MONITORING / OVERVIEW</span><h1>Buongiorno, <span id="greetingName">admin</span>.</h1><p>Qui hai il polso della tua libreria skin e delle operazioni recenti.</p></div>
+            <div class="intro-actions"><button class="secondary-action" data-route="catalog">Esplora catalogo <b>→</b></button><button class="primary-action compact" data-route="review"><span>Nuova revisione</span><b>＋</b></button></div>
+          </div>
+          <div class="signal-banner" id="signalBanner"><div class="signal-icon">✦</div><div><b>Il centro è pronto.</b><span>Importa una collezione nel revisore o parti dal catalogo curato.</span></div><button data-route="catalog">Vedi catalogo <b>→</b></button></div>
+          <div class="metric-grid" id="metricGrid">
+            <article class="metric-card"><div class="metric-top"><span>UTENTI TOTALI</span><i class="metric-icon purple">◎</i></div><strong data-metric="users">—</strong><small><b data-metric="admins">—</b> con privilegi admin</small></article>
+            <article class="metric-card"><div class="metric-top"><span>SKIN IN CATALOGO</span><i class="metric-icon blue">▦</i></div><strong data-metric="catalog">—</strong><small>Fonti curate e attribuite</small></article>
+            <article class="metric-card"><div class="metric-top"><span>EVENTI REGISTRATI</span><i class="metric-icon green">≋</i></div><strong data-metric="events">—</strong><small>Attività nel database</small></article>
+            <article class="metric-card accent-card"><div class="metric-top"><span>STATO SISTEMA</span><i class="metric-icon mint">●</i></div><strong>ONLINE</strong><small>SQLite · sessioni protette</small></article>
+          </div>
+          <div class="overview-columns"><article class="panel source-panel"><div class="panel-heading"><div><span class="eyebrow">DISTRIBUZIONE</span><h2>Fonti del catalogo</h2></div><button class="more-button" data-route="catalog">Vedi tutto →</button></div><div class="source-list" id="sourceList"><div class="empty-state">Caricamento dati…</div></div></article><article class="panel activity-panel"><div class="panel-heading"><div><span class="eyebrow">LIVE FEED</span><h2>Attività recente</h2></div><button class="more-button admin-only" data-route="activity">Log completo →</button></div><div class="activity-list" id="recentActivity"><div class="empty-state">Caricamento attività…</div></div></article></div>
+        </section>
+
+        <section class="dashboard-page" data-page="catalog" hidden>
+          <div class="page-intro compact-intro"><div><span class="eyebrow">LIBRARY / CURATED SOURCES</span><h1>Catalogo skin.</h1><p>Una selezione di skin esistenti, con fonte e creator sempre visibili.</p></div><div class="intro-actions"><button class="secondary-action" id="syncCatalog">Sincronizza catalogo <b>↻</b></button></div></div>
+          <div class="catalog-toolbar"><label class="search-box"><span>⌕</span><input id="catalogSearch" placeholder="Cerca skin, creator o tag…"></label><select id="catalogSource"><option value="all">Tutte le fonti</option><option value="NameMC">NameMC</option><option value="Planet Minecraft">Planet Minecraft</option><option value="MineSkin">MineSkin</option></select><span class="catalog-count" id="catalogCount">— risultati</span></div>
+          <div class="catalog-grid" id="catalogGrid"><div class="loading-grid">Caricamento catalogo…</div></div>
+          <div class="catalog-disclaimer"><span>ⓘ</span><p>Le skin sono contenuti della community. Il catalogo conserva attribuzione, fonte originale e link di provenienza; le preview vengono servite tramite l'endpoint pubblico documentato di MineSkin.</p></div>
+        </section>
+
+        <section class="dashboard-page" data-page="accounts" hidden>
+          <div class="page-intro compact-intro"><div><span class="eyebrow">ADMIN / ACCESS CONTROL</span><h1>Account.</h1><p>Gestisci chi può entrare nel workspace e con quali privilegi.</p></div><div class="admin-badge">● ADMIN ONLY</div></div>
+          <article class="panel table-panel"><div class="panel-heading"><div><span class="eyebrow">DIRECTORY</span><h2>Utenti registrati</h2></div><span class="table-meta" id="accountCount">— account</span></div><div class="table-wrap"><table><thead><tr><th>Account</th><th>Email</th><th>Ruolo</th><th>Stato</th><th>Creato</th><th></th></tr></thead><tbody id="accountsTable"></tbody></table></div></article>
+        </section>
+
+        <section class="dashboard-page" data-page="activity" hidden>
+          <div class="page-intro compact-intro"><div><span class="eyebrow">ADMIN / AUDIT TRAIL</span><h1>Activity log.</h1><p>Una traccia leggibile delle azioni importanti del workspace.</p></div></div>
+          <article class="panel activity-full-panel"><div class="panel-heading"><div><span class="eyebrow">EVENT STREAM</span><h2>Ultimi eventi</h2></div><span class="table-meta">SQLite / ultimi 50</span></div><div class="activity-list large" id="fullActivity"></div></article>
+        </section>
+
+        <section class="dashboard-page" data-page="account" hidden>
+          <div class="page-intro compact-intro"><div><span class="eyebrow">SETTINGS / IDENTITY</span><h1>Il mio account.</h1><p>Gestisci le credenziali dell'account con cui stai lavorando.</p></div></div>
+          <div class="account-columns"><article class="panel profile-panel"><div class="profile-hero"><span class="avatar large" id="profileAvatar">A</span><div><span class="eyebrow">SIGNED IN AS</span><h2 id="profileUsername">accountadmin</h2><p id="profileEmail">—</p></div></div><div class="profile-details"><div><span>RUOLO</span><b id="profileRole">Administrator</b></div><div><span>DATABASE</span><b>SQLite locale</b></div><div><span>SESSIONE</span><b class="green-text">Protetta</b></div></div></article><article class="panel password-panel"><div class="panel-heading"><div><span class="eyebrow">SECURITY</span><h2>Cambia password</h2></div></div><form id="passwordForm" class="settings-form"><label>Password attuale<input name="currentPassword" type="password" required></label><label>Nuova password<input name="newPassword" type="password" minlength="8" required></label><button class="primary-action compact" type="submit"><span>Aggiorna password</span><b>↗</b></button><div class="form-feedback" id="passwordMessage"></div></form></article></div>
+        </section>
       </div>
-      <span class="action-divider"></span>
-      <button class="toolbtn" id="resetBtn" data-tooltip="Cancella tutte le skin caricate e ricomincia da capo">Ricomincia</button>
-    </div>
-  </div>
-</header>
-
-<!-- Centro Controlli: overlay animato con GSAP -->
-<div class="app-overlay" id="controlCenterOverlay">
-  <div class="app-panel" id="controlCenterMenu">
-    <div class="app-panel-header">
-      <h3><span class="icon icon-controls"></span> Centro Controlli</h3>
-      <p>Scegli quale verifica lanciare sulle skin caricate, oppure eseguile tutte in sequenza.</p>
-      <button class="app-panel-close" id="ccmClose" aria-label="Chiudi" data-tooltip="Chiudi (Esc)"><span class="icon icon-x"></span></button>
-    </div>
-    <div class="ccm-items" id="ccmItems">
-      <button class="ccm-item" data-check="dimension">
-        <span class="ccm-icon"><span class="icon icon-ruler"></span></span>
-        <span class="ccm-text">
-          <strong>Dimensioni &amp; Formato</strong>
-          <small>Controlla che ogni skin sia 64×64 (o multiplo) e leggibile. Segnala i file corrotti.</small>
-        </span>
-        <span class="ccm-arrow">›</span>
-      </button>
-      <button class="ccm-item" data-check="model">
-        <span class="ccm-icon"><span class="icon icon-figure"></span></span>
-        <span class="ccm-text">
-          <strong>Modello Slim/Wide</strong>
-          <small>Analizza la texture del braccio per capire se il modello è slim o wide/classic.</small>
-        </span>
-        <span class="ccm-arrow">›</span>
-      </button>
-      <button class="ccm-item" data-check="anomaly">
-        <span class="ccm-icon"><span class="icon icon-flag"></span></span>
-        <span class="ccm-text">
-          <strong>Anomalie Tecniche</strong>
-          <small>Cerca texture rotte/placeholder e segnali tipici di skin scherzose (es. un'immagine caotica incollata solo sul volto, tavolozze a caso).</small>
-        </span>
-        <span class="ccm-arrow">›</span>
-      </button>
-      <button class="ccm-item ccm-item-primary" data-check="all">
-        <span class="ccm-icon"><span class="icon icon-checklist"></span></span>
-        <span class="ccm-text">
-          <strong>Esegui Tutti i Controlli</strong>
-          <small>Lancia in sequenza dimensioni, modello e anomalie su tutte le skin caricate.</small>
-        </span>
-        <span class="ccm-arrow">›</span>
-      </button>
-    </div>
-    <div class="ccm-footer" id="ccmFooter"></div>
-  </div>
-</div>
-
-<!-- Organizza Cartelle: rinomina/unisci/riordina le categorie -->
-<div class="app-overlay" id="folderManagerOverlay">
-  <div class="app-panel" id="folderManagerPanel">
-    <div class="app-panel-header">
-      <h3><span class="icon icon-folder"></span> Organizza Cartelle</h3>
-      <p>Rinomina, unisci e riordina le categorie a modo tuo. Le modifiche si applicano subito a tutte le skin coinvolte.</p>
-      <button class="app-panel-close" id="fmClose" aria-label="Chiudi" data-tooltip="Chiudi (Esc)"><span class="icon icon-x"></span></button>
-    </div>
-    <div class="folder-panel-hint"><span class="icon icon-info"></span> Modifica il nome e premi <b><span class="icon icon-check"></span></b> (o Invio) per applicare. Rinominare una cartella con il nome di un'altra <b>le unisce</b>. Le frecce riordinano come appaiono nella barra categorie.</div>
-    <div class="folder-list" id="folderList"></div>
-    <div class="folder-new-row">
-      <input type="text" id="folderNewInput" placeholder="Nome nuova cartella…" data-tooltip="Crea una cartella vuota, utile per spostarci dentro le skin in un secondo momento">
-      <button class="toolbtn" id="folderNewBtn" data-tooltip="Crea la cartella">+ Crea</button>
-    </div>
-  </div>
-</div>
-
-<div class="catbar" id="catbar" style="display:none;">
-  <span class="catlabel">Categorie</span>
-  <div id="catchips" style="display:flex; gap:8px;"></div>
-</div>
-</div>
-<!-- /top-sticky -->
-
-<div class="dropzone" id="dropzone">
-  <div class="glyph">
-    <svg viewBox="0 0 56 56" fill="none">
-      <rect x="4" y="4" width="48" height="48" rx="10" stroke="#7ee0c4" stroke-width="2"/>
-      <circle cx="21" cy="22" r="5" stroke="#7ee0c4" stroke-width="2"/>
-      <path d="M8 40L20 28L28 36L38 26L48 36" stroke="#7ee0c4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-    </svg>
-  </div>
-  <h2>Carica le skin da controllare</h2>
-  <p>Carica un intero <b>ZIP</b> con le skin già divise in cartelle (ogni cartella diventa una categoria), scegli una <b>cartella</b> dal computer, oppure seleziona semplicemente delle <b>immagini</b> sciolte.<br>Le apri una alla volta come modello 3D che puoi ruotare e ingrandire, poi segni <span class="icon icon-check"></span> approvata o <span class="icon icon-x"></span> da correggere.</p>
-  <div class="upload-options">
-    <label class="pick2" for="zipInput" data-tooltip="Carica uno ZIP con le skin già organizzate in cartelle"><span class="icon icon-archive"></span> Carica uno ZIP</label>
-    <input type="file" id="zipInput" accept=".zip" style="display:none;">
-    <label class="pick2" for="folderInput" data-tooltip="Scegli una cartella dal computer: le sottocartelle diventano categorie"><span class="icon icon-folder"></span> Scegli una cartella</label>
-    <input type="file" id="folderInput" webkitdirectory directory multiple style="display:none;">
-    <label class="pick2" for="fileInput" data-tooltip="Seleziona una o più immagini di skin sciolte"><span class="icon icon-image"></span> Seleziona immagini</label>
-    <input type="file" id="fileInput" multiple accept="image/*" style="display:none;">
-  </div>
-  <div class="cat-input-row">
-    <span>Categoria per le immagini sciolte:</span>
-    <input type="text" id="defaultCategoryInput" value="Senza categoria" placeholder="Nome categoria">
-  </div>
-  <div class="zip-status" id="zipStatus"></div>
-  <div class="hint">Nessun file lascia il tuo browser — tutto resta in locale</div>
-</div>
-
-<main><div class="grid" id="grid" style="display:none;"></div></main>
-
-<div class="viewer" id="viewer">
-  <div class="viewer-top">
-    <div class="info">
-      <input type="text" class="rename-input" id="renameInput" data-tooltip="Rinomina questa skin per l'esportazione">
-      <select class="cat-select" id="viewerCatSelect" data-tooltip="Cambia la categoria (cartella) di questa skin"></select>
-      <span id="viewerIndex">0 / 0</span>
-    </div>
-    <button class="viewer-close" id="closeViewer" data-tooltip="Chiudi il visualizzatore (Esc)"><span class="icon icon-x"></span></button>
-  </div>
-  <div class="viewer-stage">
-    <button class="nav-btn prev" id="prevBtn" data-tooltip="Skin precedente (← oppure A)">‹</button>
-    <div class="stage-frame" id="stageFrame">
-      <canvas id="stageCanvas"></canvas>
-      <span class="model-badge" id="modelBadge">—</span>
-      <span class="drag-hint">trascina per ruotare · scorri per zoomare</span>
-      <div class="stage-spinner">CARICAMENTO MODELLO…</div>
-    </div>
-    <button class="nav-btn next" id="nextBtn" data-tooltip="Skin successiva (→ oppure D)">›</button>
-  </div>
-  <div class="anim-bar">
-    <button class="chip anim active" data-anim="idle" data-tooltip="Posa in piedi">In piedi</button>
-    <button class="chip anim" data-anim="walk" data-tooltip="Anima la skin mentre cammina">Cammina</button>
-    <button class="chip anim" data-anim="run" data-tooltip="Anima la skin mentre corre">Corri</button>
-    <button class="chip anim" data-anim="wave" data-tooltip="Anima la skin mentre saluta">Saluta</button>
-    <button class="chip toggle" id="rotateToggle" data-tooltip="Fai ruotare automaticamente il modello 3D"><span class="icon icon-rotate"></span> Rotazione automatica</button>
-  </div>
-  <div class="viewer-bottom">
-    <button class="verdict-btn flag" id="flagBtn" data-tooltip="Segnala questa skin come da correggere (S oppure ↓)"><span class="icon icon-x"></span> Da correggere <kbd>S</kbd></button>
-    <button class="verdict-btn approve" id="approveBtn" data-tooltip="Approva questa skin (W oppure ↑)"><span class="icon icon-check"></span> Approvata <kbd>W</kbd></button>
-  </div>
-  <div class="filmstrip" id="filmstrip"></div>
-</div>
-
-<footer id="footerNote" style="display:none;">WASD o frecce per navigare e valutare · W/↑ approva · S/↓ segnala · A/← precedente · D/→ successiva · Esc chiude</footer>
-
-<!-- Librerie esterne (minificate) -->
-<script src="js/skinview3d.min.js"></script>
-<script src="js/jszip.min.js"></script>
-<script src="js/gsap.min.js"></script>
-
-<!-- Applicazione principale -->
-<script src="js/app.js"></script>
-
+      <footer class="workspace-footer"><span>SKIN CONTROL CENTER · LOCAL ADMIN EDITION</span><span>Privacy first · nessun asset lascia il tuo workspace</span></footer>
+    </main>
+  </section>
+  <script type="module" src="dist/src/dashboard.js"></script>
 </body>
 </html>

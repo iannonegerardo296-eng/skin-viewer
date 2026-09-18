@@ -11,6 +11,32 @@ python -m http.server 8000     # oppure: npx http-server -p 8000
 ```
 → apri `http://localhost:8000`
 
+### TypeScript
+
+Il progetto mantiene il viewer statico e le librerie browser senza bundler, ma ora include un layer UI tipizzato in TypeScript. Per controllarlo o ricompilarlo:
+
+```bash
+npm install
+npm run typecheck
+npm run build
+```
+
+Il file sorgente è `js/ui-enhancements.ts`; il relativo output browser è `js/ui-enhancements.js`, già incluso nella pagina. La dashboard è scritta in `src/dashboard.ts` e il backend in `server/index.ts`; entrambi vengono compilati in `dist/`.
+
+### Skin Control Center
+
+La home è una dashboard admin con autenticazione, account persistiti in SQLite, ruoli `admin`/`user`, sessioni HttpOnly, activity log e catalogo curato con attribuzione alle fonti Planet Minecraft, NameMC e MineSkin. Al primo avvio viene creato automaticamente l’account `accountadmin`: usa `ADMIN_PASSWORD` in `.env.local`, oppure la password locale predefinita `accountadmin` (cambiala subito dalla sezione account).
+
+Avvio completo:
+```bash
+npm install
+npm run typecheck
+npm run build
+npm run dev
+```
+
+Il backend ascolta su `http://127.0.0.1:8000`; puoi cambiare porta con `PORT=8001 npm run dev` (su PowerShell: `$env:PORT=8001; npm run dev`). Il database viene creato in `data/skin-control.sqlite`, escluso dal versionamento. `review.html` conserva il revisore 3D legacy collegato dalla dashboard.
+
 **Senza server**: apri `index-all-in-one.html` con doppio-click (stesso identico progetto, tutto in un file).
 
 **Vercel**:
