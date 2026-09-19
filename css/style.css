@@ -87,6 +87,17 @@
   html{ color-scheme: dark; }
   html[data-theme="light"]{ color-scheme: light; }
 
+  .review-nav{
+    display:flex; align-items:center; justify-content:space-between; gap:16px;
+    min-height:46px; padding:0 clamp(18px,4vw,52px);
+    border-bottom:1px solid var(--line); background:var(--panel);
+    color:var(--muted); font:500 10px/1 var(--mono); letter-spacing:.1em;
+    text-transform:uppercase;
+  }
+  .review-nav-back{ color:var(--text); text-decoration:none; transition:color .2s ease; }
+  .review-nav-back:hover{ color:var(--ember); }
+  .review-nav-title{ color:var(--muted); }
+
   /* icone proprie (disegnate su commissione, non emoji): ogni PNG è
      usato come maschera CSS riempita con currentColor, così restano
      ricolorabili dinamicamente come fossero SVG — funzionano identiche
@@ -1012,4 +1023,3 @@
     .grid{ grid-template-columns:repeat(auto-fill, minmax(132px,1fr)); gap:11px; }
     .card{ border-radius:13px; }
   }
-
