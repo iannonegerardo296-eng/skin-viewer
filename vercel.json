@@ -2,11 +2,6 @@
   "cleanUrls": false,
   "trailingSlash": false,
   "buildCommand": null,
-  "functions": {
-    "api/auth/login.js": { "runtime": "nodejs20.x" },
-    "api/auth/register.js": { "runtime": "nodejs20.x" },
-    "api/[...path].js": { "runtime": "nodejs20.x" }
-  },
   "headers": [
     {
       "source": "/js/(.*)",
