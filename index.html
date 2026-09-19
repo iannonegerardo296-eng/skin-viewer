@@ -76,6 +76,7 @@
         <button class="nav-item" data-route="review"><span class="nav-icon">◈</span><span>Revisore 3D</span><kbd>↗</kbd></button>
         <span class="nav-caption admin-only">Amministrazione</span>
         <button class="nav-item admin-only" data-route="accounts"><span class="nav-icon">◎</span><span>Account</span><kbd>03</kbd></button>
+        <button class="nav-item admin-only" data-route="create-account"><span class="nav-icon">＋</span><span>Crea account</span></button>
         <button class="nav-item admin-only" data-route="activity"><span class="nav-icon">≋</span><span>Activity log</span><kbd>04</kbd></button>
       </nav>
       <div class="sidebar-bottom">
@@ -120,6 +121,21 @@
         <section class="dashboard-page" data-page="accounts" hidden>
           <div class="page-intro compact-intro"><div><span class="eyebrow">ADMIN / ACCESS CONTROL</span><h1>Account.</h1><p>Gestisci chi può entrare nel workspace e con quali privilegi.</p></div><div class="admin-badge">● ADMIN ONLY</div></div>
           <article class="panel table-panel"><div class="panel-heading"><div><span class="eyebrow">DIRECTORY</span><h2>Utenti registrati</h2></div><span class="table-meta" id="accountCount">— account</span></div><div class="table-wrap"><table><thead><tr><th>Account</th><th>Email</th><th>Ruolo</th><th>Stato</th><th>Creato</th><th></th></tr></thead><tbody id="accountsTable"></tbody></table></div></article>
+        </section>
+
+        <section class="dashboard-page" data-page="create-account" hidden>
+          <div class="page-intro compact-intro"><div><span class="eyebrow">ADMIN / NEW OPERATOR</span><h1>Crea account.</h1><p>Aggiungi un nuovo utente al workspace senza uscire dalla sessione admin.</p></div><div class="admin-badge">● ADMIN ONLY</div></div>
+          <article class="panel password-panel create-account-panel">
+            <div class="panel-heading"><div><span class="eyebrow">ACCOUNT SETUP</span><h2>Nuovo account</h2></div></div>
+            <form id="createAccountForm" class="settings-form">
+              <label>Username<input name="username" pattern="[a-zA-Z0-9_.-]{3,24}" minlength="3" maxlength="24" required autocomplete="off"></label>
+              <label>Email<input name="email" type="email" autocomplete="off"></label>
+              <label>Password<input name="password" type="password" minlength="8" required autocomplete="new-password"></label>
+              <label>Ruolo<select name="role"><option value="user">Reviewer</option><option value="admin">Admin</option></select></label>
+              <button class="primary-action compact" type="submit"><span>Crea account</span><b>＋</b></button>
+              <div class="form-feedback" id="createAccountMessage"></div>
+            </form>
+          </article>
         </section>
 
         <section class="dashboard-page" data-page="activity" hidden>

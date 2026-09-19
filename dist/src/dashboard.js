@@ -130,7 +130,7 @@ async function submitAuth(form, endpoint, buttonLabel) {
     }
 }
 function routeTitle(route) {
-    const titles = { overview: 'Overview', catalog: 'Catalogo skin', review: 'Revisore 3D', accounts: 'Account', activity: 'Activity log', account: 'Il mio account' };
+    const titles = { overview: 'Overview', catalog: 'Catalogo skin', review: 'Revisore 3D', accounts: 'Account', 'create-account': 'Crea account', activity: 'Activity log', account: 'Il mio account' };
     return titles[route] || 'Overview';
 }
 function navigate(route) {
@@ -138,7 +138,7 @@ function navigate(route) {
         window.location.href = 'review.html';
         return;
     }
-    if (route === 'accounts' && currentUser?.role !== 'admin') {
+    if ((route === 'accounts' || route === 'create-account') && currentUser?.role !== 'admin') {
         showToast('Accesso negato', 'Questa sezione è disponibile solo per gli admin.', true);
         return;
     }
@@ -330,6 +330,34 @@ function wireInteractions() {
         catch (error) {
             feedback.textContent = error instanceof Error ? error.message : 'Operazione non riuscita';
             feedback.className = 'form-feedback';
+        }
+    });
+    byId('createAccountForm').addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const form = event.currentTarget;
+        const message = byId('createAccountMessage');
+        const submitButton = form.querySelector('button[type="submit"]');
+        if (!submitButton)
+            return;
+        message.textContent = '';
+        setLoading(submitButton, true, 'Creo…');
+        try {
+            const result = await api('/api/admin/users', {
+                method: 'POST',
+                body: JSON.stringify(Object.fromEntries(new FormData(form).entries())),
+            });
+            form.reset();
+            message.textContent = `Account "${result.user.username}" creato correttamente.`;
+            message.className = 'form-feedback success';
+            showToast('Account creato', `${result.user.username} è stato aggiunto al workspace.`);
+            await loadAccounts();
+        }
+        catch (error) {
+            message.textContent = error instanceof Error ? error.message : 'Impossibile creare l’account';
+            message.className = 'form-feedback';
+        }
+        finally {
+            setLoading(submitButton, false, 'Crea account');
         }
     });
     const menuButton = document.createElement('button');
