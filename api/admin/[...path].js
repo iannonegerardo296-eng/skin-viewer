@@ -13,6 +13,11 @@ function requestUrl(req) {
     .filter(Boolean);
 
   while (normalized[0] === 'api' || normalized[0] === 'admin') normalized.shift();
+  if (!normalized.length) {
+    const prefix = '/api/admin/';
+    const pathname = parsed.pathname.startsWith(prefix) ? parsed.pathname.slice(prefix.length) : '';
+    normalized.push(...pathname.split('/').map((part) => part.trim()).filter(Boolean));
+  }
   const suffix = normalized.length ? `/${normalized.map(encodeURIComponent).join('/')}` : '';
   return new URL(`/api/admin${suffix}${parsed.search}`, `https://${host}`);
 }
