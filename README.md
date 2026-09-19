@@ -21,7 +21,7 @@ npm run typecheck
 npm run build:web
 ```
 
-Il file sorgente è `js/ui-enhancements.ts`; il relativo output browser è `js/ui-enhancements.js`, già incluso nella pagina. La dashboard è scritta in `src/dashboard.ts` (compilata in `dist/src/dashboard.js`, committato nel repo). Il backend condiviso è in `lib/app.js`: lo stesso codice viene usato dal server locale (`server/dev-server.js`) e dagli endpoint serverless espliciti in `api/`, con `api/[...path].js` mantenuto come fallback.
+Il file sorgente è `js/ui-enhancements.ts`; il relativo output browser è `js/ui-enhancements.js`, già incluso nella pagina. La dashboard è scritta in `src/dashboard.ts` (compilata in `dist/src/dashboard.js`, committato nel repo). Il backend condiviso è in `lib/app.js`: lo stesso codice viene usato dal server locale (`server/dev-server.js`) e dalle funzioni Vercel, che usano due endpoint auth espliciti più il catch-all `api/[...path].js` per mantenere il deployment entro il limite Hobby.
 
 ### Skin Control Center
 
