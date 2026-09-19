@@ -18,10 +18,10 @@ Il progetto mantiene il viewer statico e le librerie browser senza bundler, ma o
 ```bash
 npm install
 npm run typecheck
-npm run build
+npm run build:web
 ```
 
-Il file sorgente è `js/ui-enhancements.ts`; il relativo output browser è `js/ui-enhancements.js`, già incluso nella pagina. La dashboard è scritta in `src/dashboard.ts` e il backend in `server/index.ts`; entrambi vengono compilati in `dist/`.
+Il file sorgente è `js/ui-enhancements.ts`; il relativo output browser è `js/ui-enhancements.js`, già incluso nella pagina. La dashboard è scritta in `src/dashboard.ts` (compilata in `dist/src/dashboard.js`, committato nel repo). Il backend condiviso è in `lib/app.js`: lo stesso codice viene usato dal server locale (`server/dev-server.js`) e dalla funzione serverless di Vercel (`api/[...path].js`).
 
 ### Skin Control Center
 
@@ -36,7 +36,6 @@ Avvio completo in locale:
 ```bash
 npm install
 npm run typecheck
-npm run build
 npm run dev
 ```
 
@@ -57,7 +56,9 @@ L'app usa funzioni serverless (`api/[...path].js`) più `@libsql/client` per il 
    npm install -g vercel
    vercel
    ```
-   oppure collega il repo GitHub da vercel.com → Add New → Project. Il `vercel.json` incluso gestisce cache/routing e dichiara la funzione `api/[...path].js` (runtime Node 22).
+   oppure collega il repo GitHub da vercel.com → Add New → Project. Il `vercel.json` incluso gestisce cache/routing; Vercel **non** ricompila nulla in deploy (`buildCommand` è disattivato), quindi `dist/src/dashboard.js` deve stare nel repository e va rigenerato con `npm run build:web` (o `npm run dev`) e ricommittato ogni volta che modifichi `src/dashboard.ts`.
+
+> Se il progetto Vercel esisteva già prima di aggiungere questo `vercel.json`, controlla **Settings → Build & Development Settings**: le impostazioni salvate lì manualmente hanno la precedenza sul file. Se vedi un "Build Command" con override attivo, disattivalo (o svuotalo) così viene usato quello del `vercel.json`.
 
 Senza `TURSO_DATABASE_URL` l'app su Vercel proverebbe comunque a scrivere un file locale in `/tmp`: funziona per una singola invocazione ma i dati **non persistono** tra un deploy/invocazione e l'altra, quindi per un uso reale imposta sempre Turso.
 
