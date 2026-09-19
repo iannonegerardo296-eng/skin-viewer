@@ -131,3 +131,23 @@ button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{ou
 @media (max-width:840px){.sidebar{width:226px}.workspace{width:calc(100% - 226px);margin-left:226px}.workspace-header{padding:0 22px}.page-stack{padding:35px 22px}.overview-columns,.account-columns{grid-template-columns:1fr}.header-link{display:none}.profile-trigger>span:not(.avatar){display:none}}
 @media (max-width:650px){.app-shell{display:block}.sidebar{position:fixed;display:flex;width:260px;transform:translateX(-100%);transition:transform .25s var(--ease);box-shadow:20px 0 60px -30px var(--shadow)}.sidebar.open{transform:none}.workspace{width:100%;margin-left:0}.workspace-header{min-height:67px;padding:0 15px}.mobile-menu{display:grid;place-items:center;width:34px;height:34px;border:1px solid var(--line);border-radius:9px;background:transparent;color:var(--muted);cursor:pointer}.mobile-menu:hover{color:var(--purple);border-color:var(--purple)}.breadcrumbs span{display:none}.breadcrumbs{font-size:9px}.header-tools{gap:6px}.page-stack{padding:28px 15px 35px}.page-intro{align-items:flex-start;flex-direction:column;margin-bottom:25px}.page-intro h1{font-size:34px}.intro-actions{width:100%}.intro-actions>*{flex:1}.metric-grid{gap:9px}.metric-card{min-height:135px;padding:15px}.metric-card>strong{margin-top:19px;font-size:24px}.metric-card>small{font-size:9px}.signal-banner{align-items:flex-start}.signal-banner button{display:none}.overview-columns{gap:12px}.panel-heading{padding:17px}.source-list,.activity-list{padding:5px 16px 10px}.catalog-toolbar{align-items:stretch;flex-wrap:wrap}.search-box{flex-basis:100%;max-width:none}.catalog-toolbar select{flex:1;width:auto}.catalog-count{align-self:center}.catalog-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.catalog-image{height:170px}.catalog-body{padding:11px}.catalog-body h3{font-size:12px}.catalog-creator{font-size:9px}.catalog-tag:nth-child(n+2){display:none}.catalog-footer{margin-top:12px}.catalog-popularity{font-size:8px}.catalog-links{gap:5px}.catalog-links a{font-size:8px}.catalog-disclaimer{font-size:9px}.workspace-footer{flex-direction:column;padding:20px 15px;font-size:8px}.auth-panel-wrap{padding:28px 20px}.mobile-brand{margin-bottom:46px}.auth-heading h2{font-size:29px}}
 @media (max-width:390px){.metric-grid{grid-template-columns:1fr}.metric-card{min-height:110px}.metric-card>strong{margin-top:13px}.catalog-grid{grid-template-columns:1fr}.catalog-image{height:220px}.profile-details{grid-template-columns:1fr 1fr}.profile-details div:last-child{grid-column:1/-1}}
+
+/* Admin-only visibility (fixes elements with .admin-only staying visible to
+   everyone because .hidden-admin previously had no matching rule) */
+.admin-only.hidden-admin{display:none!important}
+
+/* Upload-skin modal */
+.upload-modal-overlay{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(4,6,12,.62);backdrop-filter:blur(6px)}
+.upload-modal-overlay[hidden]{display:none}
+.upload-modal-panel{width:100%;max-width:440px;max-height:88vh;overflow-y:auto;border:1px solid var(--line);border-radius:var(--radius-lg);background:var(--panel);box-shadow:0 30px 80px -30px var(--shadow);padding:26px}
+.upload-modal-panel h2{margin:0 0 4px;font-size:19px;letter-spacing:-.03em}
+.upload-modal-panel p.upload-modal-sub{margin:0 0 20px;color:var(--muted);font-size:12px}
+.upload-modal-panel .settings-form label{display:block;margin-bottom:14px;font:600 11px var(--sans);color:var(--muted)}
+.upload-modal-panel .settings-form input[type="text"],
+.upload-modal-panel .settings-form input[type="file"],
+.upload-modal-panel .settings-form select{margin-top:6px;width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--bg-raised);color:var(--text);font:500 13px var(--sans)}
+.upload-modal-preview{display:none;margin:2px 0 14px;width:96px;height:96px;object-fit:contain;image-rendering:pixelated;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--bg-raised)}
+.upload-modal-preview.show{display:block}
+.upload-modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:6px}
+.upload-modal-actions .ghost-action{background:transparent;border:1px solid var(--line);color:var(--muted);border-radius:999px;padding:10px 16px;font:700 11px var(--sans);cursor:pointer}
+.upload-modal-actions .ghost-action:hover{color:var(--text);border-color:var(--line-strong)}

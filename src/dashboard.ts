@@ -213,7 +213,7 @@ function renderSources(sources: Overview['sources']): void {
 }
 
 function activityMarkup(item: ActivityItem): string {
-  const labels: Record<string, string> = { login: 'Accesso effettuato', register: 'Nuovo account registrato', catalog_sync: 'Catalogo sincronizzato', password_change: 'Password aggiornata', user_update: 'Account aggiornato' };
+  const labels: Record<string, string> = { login: 'Accesso effettuato', register: 'Nuovo account registrato', catalog_sync: 'Catalogo sincronizzato', catalog_upload: 'Skin caricata nel catalogo', password_change: 'Password aggiornata', user_update: 'Account aggiornato' };
   return `<div class="activity-row"><span class="activity-mark"></span><div><b>${escapeHtml(labels[item.action] || item.action)}</b><small>${escapeHtml(item.username)}${item.detail ? ` · ${escapeHtml(item.detail)}` : ''}</small></div><span class="activity-time">${relativeDate(item.createdAt)}</span></div>`;
 }
 
@@ -242,7 +242,7 @@ function catalogCard(item: CatalogItem): string {
     <div class="catalog-image"><img loading="lazy" src="${escapeHtml(item.imageUrl)}" alt="${escapeHtml(item.name)}" onerror="this.style.opacity='.15'">
       <span class="catalog-source">${escapeHtml(item.source)}</span><span class="catalog-model">${escapeHtml(item.model)}</span>
     </div>
-    <div class="catalog-body"><h3>${escapeHtml(item.name)}</h3><div class="catalog-creator">by ${escapeHtml(item.creator)}</div><div class="catalog-tags">${tags}</div><div class="catalog-footer"><span class="catalog-popularity">${item.popularity.toLocaleString('it-IT')} segnali</span><span class="catalog-links"><a href="${escapeHtml(item.sourceUrl)}" target="_blank" rel="noreferrer">Fonte ↗</a><a href="${escapeHtml(item.imageUrl.replace('/body/', '/download/').replace(/\/\d+\.png$/, ''))}" target="_blank" rel="noreferrer">PNG ↗</a></span></div></div>
+    <div class="catalog-body"><h3>${escapeHtml(item.name)}</h3><div class="catalog-creator">by ${escapeHtml(item.creator)}</div><div class="catalog-tags">${tags}</div><div class="catalog-footer"><span class="catalog-popularity">${item.popularity.toLocaleString('it-IT')} segnali</span><span class="catalog-links">${item.sourceUrl ? `<a href="${escapeHtml(item.sourceUrl)}" target="_blank" rel="noreferrer">Fonte ↗</a>` : ''}<a href="${escapeHtml(item.imageUrl.startsWith('https://mineskin.eu/body/') ? item.imageUrl.replace('/body/', '/download/').replace(/\/\d+\.png$/, '') : item.imageUrl)}" target="_blank" rel="noreferrer">PNG ↗</a></span></div></div>
   </article>`;
 }
 
@@ -339,6 +339,64 @@ function wireInteractions(): void {
   });
   const menuButton = document.createElement('button'); menuButton.className = 'mobile-menu'; menuButton.setAttribute('aria-label', 'Apri menu'); menuButton.textContent = '☰';
   $('.workspace-header')?.prepend(menuButton); menuButton.addEventListener('click', () => byId('sidebar').classList.toggle('open'));
+
+  wireUploadModal();
+}
+
+function fileToDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(new Error('Impossibile leggere il file'));
+    reader.readAsDataURL(file);
+  });
+}
+
+function wireUploadModal(): void {
+  const overlay = byId<HTMLDivElement>('uploadCatalogOverlay');
+  const form = byId<HTMLFormElement>('uploadCatalogForm');
+  const fileInput = byId<HTMLInputElement>('uploadFile');
+  const preview = byId<HTMLImageElement>('uploadPreview');
+  const message = byId<HTMLDivElement>('uploadCatalogMessage');
+
+  const openModal = () => { form.reset(); preview.classList.remove('show'); message.textContent = ''; overlay.hidden = false; };
+  const closeModal = () => { overlay.hidden = true; };
+
+  byId('openUploadCatalog').addEventListener('click', openModal);
+  byId('uploadCatalogCancel').addEventListener('click', closeModal);
+  overlay.addEventListener('click', (event) => { if (event.target === overlay) closeModal(); });
+
+  fileInput.addEventListener('change', () => {
+    const file = fileInput.files?.[0];
+    if (!file) { preview.classList.remove('show'); return; }
+    fileToDataUrl(file).then((dataUrl) => { preview.src = dataUrl; preview.classList.add('show'); }).catch(() => preview.classList.remove('show'));
+  });
+
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const submitButton = form.querySelector<HTMLButtonElement>('button[type="submit"]');
+    if (!submitButton) return;
+    message.textContent = '';
+    const file = fileInput.files?.[0];
+    if (!file) { message.textContent = 'Seleziona un file PNG.'; return; }
+    if (file.type !== 'image/png') { message.textContent = 'Il file deve essere un PNG.'; return; }
+    setLoading(submitButton, true, 'Carico…');
+    try {
+      const imageDataUrl = await fileToDataUrl(file);
+      const name = byId<HTMLInputElement>('uploadName').value.trim();
+      const model = byId<HTMLSelectElement>('uploadModel').value;
+      const tags = byId<HTMLInputElement>('uploadTags').value.split(',').map((tag) => tag.trim()).filter(Boolean);
+      const result = await api<{ items: CatalogItem[] }>('/api/admin/catalog/upload', { method: 'POST', body: JSON.stringify({ name, model, tags, imageDataUrl }) });
+      catalogItems = result.items;
+      renderCatalog();
+      closeModal();
+      showToast('Skin caricata', `"${name}" è ora nel catalogo.`);
+    } catch (error) {
+      message.textContent = error instanceof Error ? error.message : 'Caricamento non riuscito';
+    } finally {
+      setLoading(submitButton, false, 'Carica nel catalogo');
+    }
+  });
 }
 
 async function boot(): Promise<void> {

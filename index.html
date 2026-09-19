@@ -49,7 +49,7 @@
           <button class="auth-tab" type="button" data-auth-mode="register">Crea account</button>
         </div>
         <form id="loginForm" class="auth-form">
-          <label>Username<input name="username" autocomplete="username" placeholder="accountadmin" required></label>
+          <label>Username<input name="username" autocomplete="username" placeholder="il_tuo_username" required></label>
           <label>Password<input name="password" type="password" autocomplete="current-password" placeholder="••••••••" required></label>
           <button class="primary-action" type="submit"><span>Entra nel centro</span><b>↗</b></button>
         </form>
@@ -80,7 +80,7 @@
       </nav>
       <div class="sidebar-bottom">
         <button class="nav-item" data-route="account"><span class="nav-icon">⚙</span><span>Il mio account</span></button>
-        <div class="sidebar-user"><span class="avatar" id="sidebarAvatar">A</span><div><b id="sidebarUsername">accountadmin</b><small id="sidebarRole">Administrator</small></div><button id="logoutButton" aria-label="Esci">↗</button></div>
+        <div class="sidebar-user"><span class="avatar" id="sidebarAvatar">A</span><div><b id="sidebarUsername">—</b><small id="sidebarRole">Administrator</small></div><button id="logoutButton" aria-label="Esci">↗</button></div>
       </div>
     </aside>
 
@@ -111,7 +111,7 @@
         </section>
 
         <section class="dashboard-page" data-page="catalog" hidden>
-          <div class="page-intro compact-intro"><div><span class="eyebrow">LIBRARY / CURATED SOURCES</span><h1>Catalogo skin.</h1><p>Una selezione di skin esistenti, con fonte e creator sempre visibili.</p></div><div class="intro-actions"><button class="secondary-action" id="syncCatalog">Sincronizza catalogo <b>↻</b></button></div></div>
+          <div class="page-intro compact-intro"><div><span class="eyebrow">LIBRARY / CURATED SOURCES</span><h1>Catalogo skin.</h1><p>Una selezione di skin esistenti, con fonte e creator sempre visibili.</p></div><div class="intro-actions"><button class="secondary-action admin-only" id="openUploadCatalog">Carica skin <b>⬆</b></button><button class="secondary-action" id="syncCatalog">Sincronizza catalogo <b>↻</b></button></div></div>
           <div class="catalog-toolbar"><label class="search-box"><span>⌕</span><input id="catalogSearch" placeholder="Cerca skin, creator o tag…"></label><select id="catalogSource"><option value="all">Tutte le fonti</option><option value="NameMC">NameMC</option><option value="Planet Minecraft">Planet Minecraft</option><option value="MineSkin">MineSkin</option></select><span class="catalog-count" id="catalogCount">— risultati</span></div>
           <div class="catalog-grid" id="catalogGrid"><div class="loading-grid">Caricamento catalogo…</div></div>
           <div class="catalog-disclaimer"><span>ⓘ</span><p>Le skin sono contenuti della community. Il catalogo conserva attribuzione, fonte originale e link di provenienza; le preview vengono servite tramite l'endpoint pubblico documentato di MineSkin.</p></div>
@@ -129,12 +129,31 @@
 
         <section class="dashboard-page" data-page="account" hidden>
           <div class="page-intro compact-intro"><div><span class="eyebrow">SETTINGS / IDENTITY</span><h1>Il mio account.</h1><p>Gestisci le credenziali dell'account con cui stai lavorando.</p></div></div>
-          <div class="account-columns"><article class="panel profile-panel"><div class="profile-hero"><span class="avatar large" id="profileAvatar">A</span><div><span class="eyebrow">SIGNED IN AS</span><h2 id="profileUsername">accountadmin</h2><p id="profileEmail">—</p></div></div><div class="profile-details"><div><span>RUOLO</span><b id="profileRole">Administrator</b></div><div><span>DATABASE</span><b>SQLite locale</b></div><div><span>SESSIONE</span><b class="green-text">Protetta</b></div></div></article><article class="panel password-panel"><div class="panel-heading"><div><span class="eyebrow">SECURITY</span><h2>Cambia password</h2></div></div><form id="passwordForm" class="settings-form"><label>Password attuale<input name="currentPassword" type="password" required></label><label>Nuova password<input name="newPassword" type="password" minlength="8" required></label><button class="primary-action compact" type="submit"><span>Aggiorna password</span><b>↗</b></button><div class="form-feedback" id="passwordMessage"></div></form></article></div>
+          <div class="account-columns"><article class="panel profile-panel"><div class="profile-hero"><span class="avatar large" id="profileAvatar">A</span><div><span class="eyebrow">SIGNED IN AS</span><h2 id="profileUsername">—</h2><p id="profileEmail">—</p></div></div><div class="profile-details"><div><span>RUOLO</span><b id="profileRole">Administrator</b></div><div><span>DATABASE</span><b>SQLite locale</b></div><div><span>SESSIONE</span><b class="green-text">Protetta</b></div></div></article><article class="panel password-panel"><div class="panel-heading"><div><span class="eyebrow">SECURITY</span><h2>Cambia password</h2></div></div><form id="passwordForm" class="settings-form"><label>Password attuale<input name="currentPassword" type="password" required></label><label>Nuova password<input name="newPassword" type="password" minlength="8" required></label><button class="primary-action compact" type="submit"><span>Aggiorna password</span><b>↗</b></button><div class="form-feedback" id="passwordMessage"></div></form></article></div>
         </section>
       </div>
       <footer class="workspace-footer"><span>SKIN CONTROL CENTER · LOCAL ADMIN EDITION</span><span>Privacy first · nessun asset lascia il tuo workspace</span></footer>
     </main>
   </section>
+  <div class="upload-modal-overlay admin-only" id="uploadCatalogOverlay" hidden>
+    <div class="upload-modal-panel">
+      <h2>Carica una skin nel catalogo</h2>
+      <p class="upload-modal-sub">Il PNG resta salvato nel database (visibile a tutti gli utenti del workspace).</p>
+      <form id="uploadCatalogForm" class="settings-form">
+        <img class="upload-modal-preview" id="uploadPreview" alt="Anteprima skin">
+        <label>File skin (PNG)<input type="file" id="uploadFile" accept="image/png" required></label>
+        <label>Nome<input type="text" id="uploadName" placeholder="Nome della skin" maxlength="60" required></label>
+        <label>Modello<select id="uploadModel"><option value="wide">Wide / Classic</option><option value="slim">Slim</option></select></label>
+        <label>Tag <small>(separati da virgola, opzionale)</small><input type="text" id="uploadTags" placeholder="es. fantasy, custom"></label>
+        <div class="upload-modal-actions">
+          <button type="button" class="ghost-action" id="uploadCatalogCancel">Annulla</button>
+          <button class="primary-action compact" type="submit"><span>Carica nel catalogo</span><b>⬆</b></button>
+        </div>
+        <div class="form-feedback" id="uploadCatalogMessage"></div>
+      </form>
+    </div>
+  </div>
+
   <script type="module" src="dist/src/dashboard.js"></script>
 </body>
 </html>

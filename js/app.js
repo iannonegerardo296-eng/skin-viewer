@@ -793,7 +793,57 @@
   const filmstrip = document.getElementById('filmstrip');
   const approveBtn = document.getElementById('approveBtn');
   const flagBtn = document.getElementById('flagBtn');
+  const uploadCatalogBtn = document.getElementById('uploadCatalogBtn');
   const rotateToggle = document.getElementById('rotateToggle');
+
+  // ---------- Carica nel catalogo (solo admin) ----------
+  // Il pulsante è marcato .admin-only e nascosto via CSS finché non
+  // confermiamo, tramite /api/me, che l'utente collegato al Control Center
+  // (index.html) è un admin. Se il revisore è aperto senza sessione admin
+  // (es. index-all-in-one.html locale, senza server), resta nascosto.
+  fetch('/api/me').then(r => r.ok ? r.json() : null).then(data => {
+    if (data && data.user && data.user.role === 'admin') document.body.classList.add('is-admin');
+  }).catch(() => {});
+
+  function fileToDataUrl(file){
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => reject(new Error('Impossibile leggere il file'));
+      reader.readAsDataURL(file);
+    });
+  }
+
+  if(uploadCatalogBtn){
+    uploadCatalogBtn.addEventListener('click', async () => {
+      const it = items[currentIndex];
+      if(!it) return;
+      uploadCatalogBtn.disabled = true;
+      const originalLabel = uploadCatalogBtn.innerHTML;
+      uploadCatalogBtn.innerHTML = '<span class="icon icon-archive"></span> Carico…';
+      try{
+        const imageDataUrl = await fileToDataUrl(it.file);
+        const res = await fetch('/api/admin/catalog/upload', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: it.displayName || it.name,
+            model: it.modelType === 'slim' ? 'slim' : 'wide',
+            tags: it.category ? [it.category] : [],
+            imageDataUrl,
+          }),
+        });
+        const payload = await res.json().catch(() => ({}));
+        if(!res.ok) throw new Error(payload.error || `Errore ${res.status}`);
+        showToast('success', 'Skin caricata', `"${it.displayName || it.name}" è ora nel catalogo del Control Center.`);
+      }catch(err){
+        showToast('error', 'Caricamento non riuscito', err instanceof Error ? err.message : 'Riprova.');
+      }finally{
+        uploadCatalogBtn.disabled = false;
+        uploadCatalogBtn.innerHTML = originalLabel;
+      }
+    });
+  }
 
   let skinViewer = null;
   let currentAnim = 'idle';

@@ -10,5 +10,5 @@
     "types": ["node"],
     "skipLibCheck": true
   },
-  "include": ["js/ui-enhancements.ts", "src/dashboard.ts", "server/index.ts"]
+  "include": ["js/ui-enhancements.ts", "src/dashboard.ts"]
 }

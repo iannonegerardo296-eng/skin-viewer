@@ -25,9 +25,14 @@ Il file sorgente è `js/ui-enhancements.ts`; il relativo output browser è `js/u
 
 ### Skin Control Center
 
-La home è una dashboard admin con autenticazione, account persistiti in SQLite, ruoli `admin`/`user`, sessioni HttpOnly, activity log e catalogo curato con attribuzione alle fonti Planet Minecraft, NameMC e MineSkin. Al primo avvio viene creato automaticamente l’account `accountadmin`: usa `ADMIN_PASSWORD` in `.env.local`, oppure la password locale predefinita `accountadmin` (cambiala subito dalla sezione account).
+La home è una dashboard admin con autenticazione, account persistiti su database, ruoli `admin`/`user`, sessioni HttpOnly, activity log e catalogo curato con attribuzione alle fonti Planet Minecraft, NameMC e MineSkin. Gli admin vedono anche un pulsante **"Carica skin"** nel catalogo (e un equivalente **"Carica nel catalogo"** nel revisore 3D) per aggiungere skin al database direttamente da un PNG.
 
-Avvio completo:
+**Non esiste più un admin di default.** Nessun account viene creato automaticamente con credenziali prevedibili. Per avere il primo admin:
+
+- **In locale**: imposta `ADMIN_USERNAME` e `ADMIN_PASSWORD` in `.env.local` prima del primo avvio, oppure registra un account normale da `/api/auth/register` e promuovilo a `admin` direttamente nel database.
+- **Su Vercel**: imposta le stesse due variabili nelle Environment Variables del progetto (vedi sotto), oppure registra un account dall'app pubblicata e promuovilo a mano nel database (via Turso CLI/dashboard).
+
+Avvio completo in locale:
 ```bash
 npm install
 npm run typecheck
@@ -35,16 +40,26 @@ npm run build
 npm run dev
 ```
 
-Il backend ascolta su `http://127.0.0.1:8000`; puoi cambiare porta con `PORT=8001 npm run dev` (su PowerShell: `$env:PORT=8001; npm run dev`). Il database viene creato in `data/skin-control.sqlite`, escluso dal versionamento. `review.html` conserva il revisore 3D legacy collegato dalla dashboard.
+Il server ascolta su `http://127.0.0.1:8000`; puoi cambiare porta con `PORT=8001 npm run dev` (su PowerShell: `$env:PORT=8001; npm run dev`). In locale il database è un file SQLite in `data/skin-control.sqlite` (creato al volo, escluso dal versionamento). `review.html` conserva il revisore 3D legacy collegato dalla dashboard.
 
-**Senza server**: apri `index-all-in-one.html` con doppio-click (stesso identico progetto, tutto in un file).
+### Deploy su Vercel
 
-**Vercel**:
-```bash
-npm install -g vercel
-vercel
-```
-oppure collega il repo GitHub da [vercel.com](https://vercel.com) → Add New → Project. Il `vercel.json` incluso gestisce già cache/routing.
+L'app usa funzioni serverless (`api/[...path].js`) più `@libsql/client` per il database, quindi funziona sia in locale sia su Vercel con lo **stesso codice**. Il filesystem di Vercel è di sola lettura/effimero fuori da `/tmp`, quindi un file SQLite locale non può essere il database "vero" in produzione: serve un database SQLite servito via rete, e la scelta più semplice e gratuita è **Turso** (libSQL, protocollo compatibile con SQLite).
+
+1. Crea un database gratuito su [turso.tech](https://turso.tech) (CLI: `turso db create skin-control`).
+2. Recupera URL e token: `turso db show skin-control --url` e `turso db tokens create skin-control`.
+3. Su [vercel.com](https://vercel.com) → il tuo progetto → **Settings → Environment Variables**, aggiungi:
+   - `TURSO_DATABASE_URL` = l'URL del database (`libsql://...`)
+   - `TURSO_AUTH_TOKEN` = il token generato
+   - `ADMIN_USERNAME` e `ADMIN_PASSWORD` = credenziali del primo admin (create al primo avvio della funzione serverless)
+4. Deploy:
+   ```bash
+   npm install -g vercel
+   vercel
+   ```
+   oppure collega il repo GitHub da vercel.com → Add New → Project. Il `vercel.json` incluso gestisce cache/routing e dichiara la funzione `api/[...path].js` (runtime Node 22).
+
+Senza `TURSO_DATABASE_URL` l'app su Vercel proverebbe comunque a scrivere un file locale in `/tmp`: funziona per una singola invocazione ma i dati **non persistono** tra un deploy/invocazione e l'altra, quindi per un uso reale imposta sempre Turso.
 
 ## Struttura del progetto
 
