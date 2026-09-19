@@ -835,7 +835,7 @@
         });
         const payload = await res.json().catch(() => ({}));
         if(!res.ok) throw new Error(payload.error || `Errore ${res.status}`);
-        showToast('success', 'Skin caricata', `"${it.displayName || it.name}" è ora nel catalogo del Control Center.`);
+        showToast('success', 'Skin aggiunta al catalogo', `"${it.displayName || it.name}" è ora nel catalogo del Control Center.`);
       }catch(err){
         showToast('error', 'Caricamento non riuscito', err instanceof Error ? err.message : 'Riprova.');
       }finally{
@@ -1345,6 +1345,7 @@
     viewerIndex.textContent = `${currentIndex+1} / ${items.length}`;
     approveBtn.classList.toggle('active', it.status === 'approved');
     flagBtn.classList.toggle('active', it.status === 'flagged');
+    uploadCatalogBtn.hidden = it.status !== 'approved';
     document.getElementById('prevBtn').disabled = currentIndex === 0;
     document.getElementById('nextBtn').disabled = currentIndex === items.length - 1;
     modelBadge.textContent = '—';
