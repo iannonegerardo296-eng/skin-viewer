@@ -21,7 +21,7 @@ npm run typecheck
 npm run build:web
 ```
 
-Il file sorgente è `js/ui-enhancements.ts`; il relativo output browser è `js/ui-enhancements.js`, già incluso nella pagina. La dashboard è scritta in `src/dashboard.ts` (compilata in `dist/src/dashboard.js`, committato nel repo). Il backend condiviso è in `lib/app.js`: lo stesso codice viene usato dal server locale (`server/dev-server.js`) e dalla funzione serverless di Vercel (`api/[...path].js`).
+Il file sorgente è `js/ui-enhancements.ts`; il relativo output browser è `js/ui-enhancements.js`, già incluso nella pagina. La dashboard è scritta in `src/dashboard.ts` (compilata in `dist/src/dashboard.js`, committato nel repo). Il backend condiviso è in `lib/app.js`: lo stesso codice viene usato dal server locale (`server/dev-server.js`) e dagli endpoint serverless espliciti in `api/`, con `api/[...path].js` mantenuto come fallback.
 
 ### Skin Control Center
 
@@ -39,11 +39,11 @@ npm run typecheck
 npm run dev
 ```
 
-Il server ascolta su `http://127.0.0.1:8000`; puoi cambiare porta con `PORT=8001 npm run dev` (su PowerShell: `$env:PORT=8001; npm run dev`). In locale il database è un file SQLite in `data/skin-control.sqlite` (creato al volo, escluso dal versionamento). `review.html` conserva il revisore 3D legacy collegato dalla dashboard.
+Il server ascolta su `http://127.0.0.1:8000`; puoi cambiare porta con `PORT=8001 npm run dev` (su PowerShell: `$env:PORT=8001; npm run dev`). In locale il database è un file SQLite in `data/skin-control.sqlite` (creato al volo, escluso dal versionamento). `review.html` contiene il revisore 3D e condivide il tema visuale con la dashboard.
 
 ### Deploy su Vercel
 
-L'app usa funzioni serverless (`api/[...path].js`) più `@libsql/client` per il database, quindi funziona sia in locale sia su Vercel con lo **stesso codice**. Il filesystem di Vercel è di sola lettura/effimero fuori da `/tmp`, quindi un file SQLite locale non può essere il database "vero" in produzione: serve un database SQLite servito via rete, e la scelta più semplice e gratuita è **Turso** (libSQL, protocollo compatibile con SQLite).
+L'app usa funzioni serverless Node in `api/` più `@libsql/client` per il database, quindi funziona sia in locale sia su Vercel con lo **stesso codice**. Il filesystem di Vercel è di sola lettura/effimero fuori da `/tmp`, quindi un file SQLite locale non può essere il database "vero" in produzione: serve un database SQLite servito via rete, e la scelta più semplice e gratuita è **Turso** (libSQL, protocollo compatibile con SQLite).
 
 1. Crea un database gratuito su [turso.tech](https://turso.tech) (CLI: `turso db create skin-control`).
 2. Recupera URL e token: `turso db show skin-control --url` e `turso db tokens create skin-control`.

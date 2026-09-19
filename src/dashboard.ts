@@ -89,9 +89,14 @@ function relativeDate(value: string): string {
 async function api<T>(url: string, options: RequestInit = {}): Promise<T> {
   const response = await fetch(url, {
     ...options,
+    credentials: 'same-origin',
+    signal: options.signal || AbortSignal.timeout(15000),
     headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
   });
-  const payload = await response.json().catch(() => ({})) as T & { error?: string };
+  const contentType = response.headers.get('content-type') || '';
+  const payload = contentType.includes('application/json')
+    ? await response.json() as T & { error?: string }
+    : {} as T & { error?: string };
   if (!response.ok) throw new Error(payload.error || `Errore ${response.status}`);
   return payload;
 }
@@ -122,6 +127,7 @@ function showToast(title: string, message: string, error = false): void {
 
 function setLoading(button: HTMLButtonElement, loading: boolean, label: string): void {
   button.disabled = loading;
+  button.setAttribute('aria-busy', String(loading));
   button.dataset.originalLabel ||= button.innerHTML;
   button.innerHTML = loading ? `<span class="button-spinner"></span>${label}` : button.dataset.originalLabel;
 }
@@ -200,7 +206,7 @@ function navigate(route: string): void {
     }
   });
   if (route === 'catalog') loadCatalog();
-  if (route === 'accounts') loadAccounts();
+  if (route === 'accounts' || route === 'create-account') loadAccounts();
   if (route === 'activity') loadActivity();
   if (window.innerWidth <= 650) byId<HTMLElement>('sidebar').classList.remove('open');
   window.scrollTo({ top: 0, behavior: 'smooth' });

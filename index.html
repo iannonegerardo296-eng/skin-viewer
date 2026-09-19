@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#090c13">
+  <meta name="theme-color" content="#080b12">
+  <meta name="description" content="Skin Control Center: importa, revisiona e organizza skin Minecraft.">
   <title>Skin Control Center</title>
   <link rel="stylesheet" href="css/dashboard.css">
   <script>
@@ -68,7 +69,7 @@
   <section class="app-shell" id="appShell" hidden>
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-brand brand-lockup"><span class="brand-mark"><i></i><i></i><i></i></span><span>SKIN CONTROL <b>/</b><small>CENTER</small></span></div>
-      <div class="sidebar-context"><span class="status-dot"></span><div><b>Workspace locale</b><small>Operativo · SQLite</small></div></div>
+      <div class="sidebar-context"><span class="status-dot"></span><div><b>Workspace protetto</b><small>Operativo · sessione sicura</small></div></div>
       <nav class="main-nav" aria-label="Navigazione principale">
         <span class="nav-caption">Workspace</span>
         <button class="nav-item active" data-route="overview"><span class="nav-icon">⌂</span><span>Overview</span><kbd>01</kbd></button>
@@ -106,7 +107,7 @@
             <article class="metric-card"><div class="metric-top"><span>UTENTI TOTALI</span><i class="metric-icon purple">◎</i></div><strong data-metric="users">—</strong><small><b data-metric="admins">—</b> con privilegi admin</small></article>
             <article class="metric-card"><div class="metric-top"><span>SKIN IN CATALOGO</span><i class="metric-icon blue">▦</i></div><strong data-metric="catalog">—</strong><small>Fonti curate e attribuite</small></article>
             <article class="metric-card"><div class="metric-top"><span>EVENTI REGISTRATI</span><i class="metric-icon green">≋</i></div><strong data-metric="events">—</strong><small>Attività nel database</small></article>
-            <article class="metric-card accent-card"><div class="metric-top"><span>STATO SISTEMA</span><i class="metric-icon mint">●</i></div><strong>ONLINE</strong><small>SQLite · sessioni protette</small></article>
+            <article class="metric-card accent-card"><div class="metric-top"><span>STATO SISTEMA</span><i class="metric-icon mint">●</i></div><strong>ONLINE</strong><small>Database con sessioni protette</small></article>
           </div>
           <div class="overview-columns"><article class="panel source-panel"><div class="panel-heading"><div><span class="eyebrow">DISTRIBUZIONE</span><h2>Fonti del catalogo</h2></div><button class="more-button" data-route="catalog">Vedi tutto →</button></div><div class="source-list" id="sourceList"><div class="empty-state">Caricamento dati…</div></div></article><article class="panel activity-panel"><div class="panel-heading"><div><span class="eyebrow">LIVE FEED</span><h2>Attività recente</h2></div><button class="more-button admin-only" data-route="activity">Log completo →</button></div><div class="activity-list" id="recentActivity"><div class="empty-state">Caricamento attività…</div></div></article></div>
         </section>
@@ -148,7 +149,7 @@
           <div class="account-columns"><article class="panel profile-panel"><div class="profile-hero"><span class="avatar large" id="profileAvatar">A</span><div><span class="eyebrow">SIGNED IN AS</span><h2 id="profileUsername">—</h2><p id="profileEmail">—</p></div></div><div class="profile-details"><div><span>RUOLO</span><b id="profileRole">Administrator</b></div><div><span>DATABASE</span><b>SQLite locale</b></div><div><span>SESSIONE</span><b class="green-text">Protetta</b></div></div></article><article class="panel password-panel"><div class="panel-heading"><div><span class="eyebrow">SECURITY</span><h2>Cambia password</h2></div></div><form id="passwordForm" class="settings-form"><label>Password attuale<input name="currentPassword" type="password" required></label><label>Nuova password<input name="newPassword" type="password" minlength="8" required></label><button class="primary-action compact" type="submit"><span>Aggiorna password</span><b>↗</b></button><div class="form-feedback" id="passwordMessage"></div></form></article></div>
         </section>
       </div>
-      <footer class="workspace-footer"><span>SKIN CONTROL CENTER · LOCAL ADMIN EDITION</span><span>Privacy first · nessun asset lascia il tuo workspace</span></footer>
+      <footer class="workspace-footer"><span>SKIN CONTROL CENTER · ADMIN EDITION</span><span>Sessioni protette · asset gestiti nel workspace</span></footer>
     </main>
   </section>
   <div class="upload-modal-overlay admin-only" id="uploadCatalogOverlay" hidden>

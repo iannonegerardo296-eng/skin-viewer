@@ -47,9 +47,14 @@ function relativeDate(value) {
 async function api(url, options = {}) {
     const response = await fetch(url, {
         ...options,
+        credentials: 'same-origin',
+        signal: options.signal || AbortSignal.timeout(15000),
         headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
     });
-    const payload = await response.json().catch(() => ({}));
+    const contentType = response.headers.get('content-type') || '';
+    const payload = contentType.includes('application/json')
+        ? await response.json()
+        : {};
     if (!response.ok)
         throw new Error(payload.error || `Errore ${response.status}`);
     return payload;
@@ -78,6 +83,7 @@ function showToast(title, message, error = false) {
 }
 function setLoading(button, loading, label) {
     button.disabled = loading;
+    button.setAttribute('aria-busy', String(loading));
     button.dataset.originalLabel ||= button.innerHTML;
     button.innerHTML = loading ? `<span class="button-spinner"></span>${label}` : button.dataset.originalLabel;
 }
@@ -155,7 +161,7 @@ function navigate(route) {
     });
     if (route === 'catalog')
         loadCatalog();
-    if (route === 'accounts')
+    if (route === 'accounts' || route === 'create-account')
         loadAccounts();
     if (route === 'activity')
         loadActivity();
