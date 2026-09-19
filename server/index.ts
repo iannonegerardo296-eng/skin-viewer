@@ -94,7 +94,7 @@ db.exec(`
   );
 `);
 
-authenticateDatabase();
+seedAdminIfConfigured();
 
 function hashPassword(password: string, salt = crypto.randomBytes(16).toString('hex')): string {
   const derived = crypto.scryptSync(password, salt, 64).toString('hex');
@@ -110,13 +110,15 @@ function verifyPassword(password: string, stored: string): boolean {
   return left.length === right.length && crypto.timingSafeEqual(left, right);
 }
 
-function authenticateDatabase(): void {
-  const existing = db.prepare('SELECT id FROM users WHERE username = ?').get('accountadmin') as { id: number } | undefined;
+function seedAdminIfConfigured(): void {
+  const username = process.env.ADMIN_USERNAME;
+  const password = process.env.ADMIN_PASSWORD;
+  if (!username || !password) return;
+  const existing = db.prepare('SELECT id FROM users WHERE username = ?').get(username) as { id: number } | undefined;
   if (existing) return;
-  const password = process.env.ADMIN_PASSWORD || 'accountadmin';
   db.prepare(`INSERT INTO users (username, email, password_hash, role) VALUES (?, ?, ?, 'admin')`)
-    .run('accountadmin', process.env.ADMIN_EMAIL || null, hashPassword(password));
-  console.log(`Admin iniziale creato nel database: accountadmin (password da ADMIN_PASSWORD oppure accountadmin in locale)`);
+    .run(username, process.env.ADMIN_EMAIL || null, hashPassword(password));
+  console.log(`Admin iniziale creato: ${username}`);
 }
 
 const catalogSeeds: CatalogSeed[] = [

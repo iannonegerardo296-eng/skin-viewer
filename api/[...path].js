@@ -4,19 +4,24 @@ const { handleApi, json } = require('../lib/app');
 
 function requestUrl(req) {
   const host = req.headers?.host || 'localhost';
+  const rawUrl = String(req.url || '/');
+  const parsed = new URL(rawUrl, `https://${host}`);
   const queryPath = req.query?.path;
   const parts = Array.isArray(queryPath) ? queryPath : (queryPath ? [queryPath] : []);
+
   if (parts.length) {
     const normalized = parts
       .flatMap((part) => String(part).split('/'))
       .map((part) => part.trim())
       .filter(Boolean);
+
     while (normalized[0] === 'api') normalized.shift();
-    if (normalized.length) return new URL(`/api/${normalized.map(encodeURIComponent).join('/')}`, `https://${host}`);
+    if (normalized.length) {
+      const pathname = `/api/${normalized.map(encodeURIComponent).join('/')}`;
+      return new URL(`${pathname}${parsed.search}`, `https://${host}`);
+    }
   }
 
-  const rawUrl = String(req.url || '/');
-  const parsed = new URL(rawUrl, `https://${host}`);
   let pathname = parsed.pathname;
   if (!pathname.startsWith('/api/')) pathname = `/api${pathname === '/' ? '' : pathname}`;
   return new URL(`${pathname}${parsed.search}`, `https://${host}`);
@@ -33,3 +38,5 @@ module.exports = async (req, res) => {
     else res.end();
   }
 };
+
+module.exports.requestUrl = requestUrl;
