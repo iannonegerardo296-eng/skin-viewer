@@ -1,6 +1,7 @@
 {
   "cleanUrls": false,
   "trailingSlash": false,
+  "buildCommand": null,
   "headers": [
     {
       "source": "/js/(.*)",
