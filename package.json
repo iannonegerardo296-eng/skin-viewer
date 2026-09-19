@@ -21,7 +21,8 @@
     "test": "node --test tests/**/*.test.mjs"
   },
   "dependencies": {
-    "@libsql/client": "^0.18.0"
+    "@libsql/client": "^0.18.0",
+    "@vercel/analytics": "^2.0.1"
   },
   "devDependencies": {
     "@types/node": "^22.15.0",
