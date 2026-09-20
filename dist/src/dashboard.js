@@ -388,8 +388,17 @@ function wireUploadModal() {
     const fileInput = byId('uploadFile');
     const preview = byId('uploadPreview');
     const message = byId('uploadCatalogMessage');
-    const openModal = () => { form.reset(); preview.classList.remove('show'); message.textContent = ''; overlay.hidden = false; };
-    const closeModal = () => { overlay.hidden = true; };
+    const openModal = () => {
+        form.reset();
+        preview.classList.remove('show');
+        message.textContent = '';
+        overlay.hidden = false;
+        overlay.classList.add('is-open');
+    };
+    const closeModal = () => {
+        overlay.classList.remove('is-open');
+        overlay.hidden = true;
+    };
     byId('openUploadCatalog').addEventListener('click', openModal);
     byId('uploadCatalogCancel').addEventListener('click', closeModal);
     overlay.addEventListener('click', (event) => { if (event.target === overlay)

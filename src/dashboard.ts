@@ -390,8 +390,17 @@ function wireUploadModal(): void {
   const preview = byId<HTMLImageElement>('uploadPreview');
   const message = byId<HTMLDivElement>('uploadCatalogMessage');
 
-  const openModal = () => { form.reset(); preview.classList.remove('show'); message.textContent = ''; overlay.hidden = false; };
-  const closeModal = () => { overlay.hidden = true; };
+  const openModal = () => {
+    form.reset();
+    preview.classList.remove('show');
+    message.textContent = '';
+    overlay.hidden = false;
+    overlay.classList.add('is-open');
+  };
+  const closeModal = () => {
+    overlay.classList.remove('is-open');
+    overlay.hidden = true;
+  };
 
   byId('openUploadCatalog').addEventListener('click', openModal);
   byId('uploadCatalogCancel').addEventListener('click', closeModal);

@@ -137,7 +137,8 @@ button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{ou
 .admin-only.hidden-admin{display:none!important}
 
 /* Upload-skin modal */
-.upload-modal-overlay{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(4,6,12,.62);backdrop-filter:blur(6px)}
+.upload-modal-overlay{position:fixed;inset:0;z-index:60;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(4,6,12,.62);backdrop-filter:blur(6px)}
+.upload-modal-overlay.is-open{display:flex}
 .upload-modal-overlay[hidden]{display:none}
 .upload-modal-panel{width:100%;max-width:440px;max-height:88vh;overflow-y:auto;border:1px solid var(--line);border-radius:var(--radius-lg);background:var(--panel);box-shadow:0 30px 80px -30px var(--shadow);padding:26px}
 .upload-modal-panel h2{margin:0 0 4px;font-size:19px;letter-spacing:-.03em}
