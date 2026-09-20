@@ -794,6 +794,7 @@
   const approveBtn = document.getElementById('approveBtn');
   const flagBtn = document.getElementById('flagBtn');
   const uploadCatalogBtn = document.getElementById('uploadCatalogBtn');
+  const uploadApprovedBtn = document.getElementById('uploadApprovedBtn');
   const rotateToggle = document.getElementById('rotateToggle');
 
   // ---------- Carica nel catalogo (solo admin) ----------
@@ -841,6 +842,59 @@
       }finally{
         uploadCatalogBtn.disabled = false;
         uploadCatalogBtn.innerHTML = originalLabel;
+      }
+    });
+  }
+
+  if(uploadApprovedBtn){
+    uploadApprovedBtn.addEventListener('click', async () => {
+      const approvedItems = items.filter(it => it.status === 'approved');
+      if(!approvedItems.length){
+        showToast('warning', 'Nessuna skin approvata', 'Approva almeno una skin prima di aggiungerla al catalogo.');
+        return;
+      }
+
+      uploadApprovedBtn.disabled = true;
+      const originalLabel = uploadApprovedBtn.innerHTML;
+      let uploaded = 0;
+      const failed = [];
+      try{
+        await ensureModelsDetected((done, total) => {
+          uploadApprovedBtn.innerHTML = `<span class="icon icon-figure"></span> Modelli ${done} / ${total}…`;
+        });
+
+        for(let i = 0; i < approvedItems.length; i++){
+          const it = approvedItems[i];
+          uploadApprovedBtn.innerHTML = `<span class="icon icon-archive"></span> Aggiungo ${i + 1} / ${approvedItems.length}…`;
+          try{
+            const imageDataUrl = await fileToDataUrl(it.file);
+            const res = await fetch('/api/admin/catalog/upload', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                name: it.displayName || it.name,
+                model: it.modelType === 'slim' ? 'slim' : 'wide',
+                tags: it.category ? [it.category] : [],
+                imageDataUrl,
+              }),
+            });
+            const payload = await res.json().catch(() => ({}));
+            if(!res.ok) throw new Error(payload.error || `Errore ${res.status}`);
+            uploaded++;
+          }catch(err){
+            failed.push(`${it.displayName || it.name}: ${err instanceof Error ? err.message : 'errore sconosciuto'}`);
+          }
+        }
+
+        if(failed.length){
+          showToast('warning', 'Catalogo aggiornato parzialmente', `${uploaded} aggiunte, ${failed.length} non riuscite.`);
+          console.warn('Skin non aggiunte al catalogo:', failed);
+        }else{
+          showToast('success', 'Catalogo aggiornato', `${uploaded} skin approvate aggiunte al catalogo.`);
+        }
+      }finally{
+        uploadApprovedBtn.disabled = false;
+        uploadApprovedBtn.innerHTML = originalLabel;
       }
     });
   }
