@@ -130,11 +130,12 @@ function setUser(user) {
     $$('#sidebarAvatar, #headerAvatar, #profileAvatar').forEach((element) => {
         element.textContent = avatar;
     });
-    byId('sidebarRole').textContent = user.role === 'admin' ? 'Administrator' : 'Reviewer';
+    byId('sidebarRole').textContent = user.role === 'admin' ? 'Administrator' : user.role === 'staff' ? 'Staff curator' : 'Reviewer';
     byId('profileEmail').textContent = user.email || 'Nessuna email collegata';
-    byId('profileRole').textContent = user.role === 'admin' ? 'Administrator' : 'Reviewer';
+    byId('profileRole').textContent = user.role === 'admin' ? 'Administrator' : user.role === 'staff' ? 'Staff curator' : 'Reviewer';
     byId('headerUsername').setAttribute('aria-label', name);
     $$('.admin-only').forEach((element) => element.classList.toggle('hidden-admin', user.role !== 'admin'));
+    $$('.staff-only').forEach((element) => element.classList.toggle('hidden-admin', !['admin', 'staff'].includes(user.role)));
 }
 function switchAuthMode(mode) {
     const isLogin = mode === 'login';
@@ -167,7 +168,7 @@ async function submitAuth(form, endpoint, buttonLabel) {
     }
 }
 function routeTitle(route) {
-    const titles = { overview: 'Overview', catalog: 'Catalogo skin', review: 'Revisore 3D', accounts: 'Account', 'create-account': 'Crea account', activity: 'Activity log', account: 'Il mio account' };
+    const titles = { overview: 'Overview', catalog: 'Catalogo skin', review: 'Revisore 3D', proposals: 'Proposte catalogo', accounts: 'Account', 'create-account': 'Crea account', activity: 'Activity log', account: 'Il mio account' };
     return titles[route] || 'Overview';
 }
 function navigate(route, animate = true) {
@@ -177,6 +178,10 @@ function navigate(route, animate = true) {
     }
     if ((route === 'accounts' || route === 'create-account' || route === 'activity') && currentUser?.role !== 'admin') {
         showToast('Accesso negato', 'Questa sezione è disponibile solo per gli admin.', true);
+        return;
+    }
+    if (route === 'proposals' && !['admin', 'staff'].includes(currentUser?.role || '')) {
+        showToast('Accesso negato', 'Questa sezione è disponibile solo per lo staff.', true);
         return;
     }
     activeRoute = route;
@@ -198,6 +203,8 @@ function navigate(route, animate = true) {
         loadAccounts();
     if (route === 'activity')
         loadActivity();
+    if (route === 'proposals')
+        loadProposals();
     if (window.innerWidth <= 650)
         byId('sidebar').classList.remove('open');
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -313,6 +320,39 @@ async function loadActivity() {
         showToast('Activity log non disponibile', error instanceof Error ? error.message : 'Errore di caricamento', true);
     }
 }
+function proposalMarkup(proposal) {
+    const statusLabel = proposal.status === 'pending' ? 'In revisione' : proposal.status === 'approved' ? 'Approvata' : 'Rifiutata';
+    const actions = currentUser?.role === 'admin' && proposal.status === 'pending'
+        ? `<div class="proposal-actions"><button class="primary-action compact" data-proposal-action="approved" data-proposal-id="${proposal.id}">Approva e pubblica</button><button class="table-action" data-proposal-action="rejected" data-proposal-id="${proposal.id}">Rifiuta</button></div>`
+        : '';
+    return `<article class="proposal-card"><img src="${escapeHtml(proposal.imageDataUrl)}" alt="${escapeHtml(proposal.name)}"><div class="proposal-content"><div class="proposal-meta"><span class="status-pill ${proposal.status === 'approved' ? 'active' : proposal.status === 'rejected' ? 'inactive' : ''}">${statusLabel}</span><span>${formatDate(proposal.createdAt)}</span></div><h3>${escapeHtml(proposal.name)}</h3><p>Proposta da <b>${escapeHtml(proposal.username)}</b> · modello ${escapeHtml(proposal.model)}</p><div class="catalog-tags">${proposal.tags.map((tag) => `<span class="catalog-tag">${escapeHtml(tag)}</span>`).join('')}</div>${actions}</div></article>`;
+}
+async function loadProposals() {
+    const target = byId('proposalList');
+    try {
+        const result = await api('/api/catalog/proposals');
+        target.innerHTML = result.proposals.length ? result.proposals.map(proposalMarkup).join('') : '<div class="empty-state">Nessuna proposta presente.</div>';
+        $$('[data-proposal-action]').forEach((button) => button.addEventListener('click', async () => {
+            const proposalId = button.dataset.proposalId;
+            const status = button.dataset.proposalAction;
+            if (!proposalId || !status)
+                return;
+            button.disabled = true;
+            try {
+                await api(`/api/admin/catalog/proposals/${proposalId}`, { method: 'PATCH', body: JSON.stringify({ status }) });
+                await loadProposals();
+                showToast(status === 'approved' ? 'Skin pubblicata' : 'Proposta rifiutata', status === 'approved' ? 'La skin è ora nel catalogo.' : 'La proposta è stata archiviata.');
+            }
+            catch (error) {
+                button.disabled = false;
+                showToast('Operazione non riuscita', error instanceof Error ? error.message : 'Errore', true);
+            }
+        }));
+    }
+    catch (error) {
+        target.innerHTML = `<div class="empty-state">${escapeHtml(error instanceof Error ? error.message : 'Proposte non disponibili')}</div>`;
+    }
+}
 async function bootWorkspace() {
     if (!currentUser)
         return;
@@ -397,6 +437,42 @@ function wireInteractions() {
             const result = await api('/api/admin/users', {
                 method: 'POST',
                 body: JSON.stringify(Object.fromEntries(new FormData(form).entries())),
+            });
+            byId('proposalForm').addEventListener('submit', async (event) => {
+                event.preventDefault();
+                const form = event.currentTarget;
+                const fileInput = byId('proposalFile');
+                const message = byId('proposalMessage');
+                const submitButton = form.querySelector('button[type="submit"]');
+                const file = fileInput.files?.[0];
+                if (!submitButton || !file) {
+                    message.textContent = 'Seleziona un file PNG.';
+                    return;
+                }
+                if (file.type !== 'image/png') {
+                    message.textContent = 'Il file deve essere un PNG.';
+                    return;
+                }
+                setLoading(submitButton, true, 'Invio…');
+                try {
+                    const tags = byId('proposalTags').value.split(',').map((tag) => tag.trim()).filter(Boolean);
+                    await api('/api/catalog/proposals', { method: 'POST', body: JSON.stringify({
+                            name: byId('proposalName').value.trim(),
+                            model: byId('proposalModel').value,
+                            tags,
+                            imageDataUrl: await fileToDataUrl(file),
+                        }) });
+                    form.reset();
+                    message.textContent = 'Proposta inviata all’amministrazione.';
+                    message.className = 'form-feedback success';
+                    await loadProposals();
+                }
+                catch (error) {
+                    message.textContent = error instanceof Error ? error.message : 'Proposta non inviata';
+                }
+                finally {
+                    setLoading(submitButton, false, 'Invia proposta');
+                }
             });
             form.reset();
             message.textContent = `Account "${result.user.username}" creato correttamente.`;

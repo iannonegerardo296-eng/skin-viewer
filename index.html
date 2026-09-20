@@ -76,6 +76,7 @@
         <button class="nav-item active" data-route="overview"><span class="nav-icon">⌂</span><span>Overview</span><kbd>01</kbd></button>
         <button class="nav-item" data-route="catalog"><span class="nav-icon">▦</span><span>Catalogo skin</span><kbd>02</kbd></button>
         <button class="nav-item" data-route="review"><span class="nav-icon">◈</span><span>Revisore 3D</span><kbd>↗</kbd></button>
+        <button class="nav-item staff-only" data-route="proposals"><span class="nav-icon">✦</span><span>Proposte catalogo</span><kbd>05</kbd></button>
         <span class="nav-caption admin-only">Amministrazione</span>
         <button class="nav-item admin-only" data-route="accounts"><span class="nav-icon">◎</span><span>Account</span><kbd>03</kbd></button>
         <button class="nav-item admin-only" data-route="create-account"><span class="nav-icon">＋</span><span>Crea account</span></button>
@@ -134,11 +135,32 @@
               <label>Username<input name="username" pattern="[a-zA-Z0-9_.-]{3,24}" minlength="3" maxlength="24" required autocomplete="off"></label>
               <label>Email<input name="email" type="email" autocomplete="off"></label>
               <label>Password<input name="password" type="password" minlength="8" required autocomplete="new-password"></label>
-              <label>Ruolo<select name="role"><option value="user">Reviewer</option><option value="admin">Admin</option></select></label>
+              <label>Ruolo<select name="role"><option value="user">Reviewer</option><option value="staff">Staff curator</option><option value="admin">Admin</option></select></label>
               <button class="primary-action compact" type="submit"><span>Crea account</span><b>＋</b></button>
               <div class="form-feedback" id="createAccountMessage"></div>
             </form>
           </article>
+        </section>
+
+        <section class="dashboard-page" data-page="proposals" hidden>
+          <div class="page-intro compact-intro"><div><span class="eyebrow">CURATION / CATALOG QUEUE</span><h1>Proposte catalogo.</h1><p>Invia nuove skin alla coda di revisione o approva quelle proposte dal tuo staff.</p></div><div class="admin-badge staff-only">● STAFF WORKFLOW</div></div>
+          <div class="proposal-layout">
+            <article class="panel proposal-form-panel staff-only">
+              <div class="panel-heading"><div><span class="eyebrow">NEW SUBMISSION</span><h2>Proponi una skin</h2></div></div>
+              <form id="proposalForm" class="settings-form">
+                <label>File skin (PNG)<input type="file" id="proposalFile" accept="image/png" required></label>
+                <label>Nome<input type="text" id="proposalName" maxlength="60" placeholder="Nome della skin" required></label>
+                <label>Modello<select id="proposalModel"><option value="wide">Wide / Classic</option><option value="slim">Slim</option></select></label>
+                <label>Tag <small>(separati da virgola)</small><input type="text" id="proposalTags" placeholder="fantasy, seasonal"></label>
+                <button class="primary-action compact" type="submit"><span>Invia proposta</span><b>↗</b></button>
+                <div class="form-feedback" id="proposalMessage"></div>
+              </form>
+            </article>
+            <article class="panel proposal-queue-panel">
+              <div class="panel-heading"><div><span class="eyebrow">REVIEW QUEUE</span><h2>Proposte ricevute</h2></div><span class="table-meta">Staff / Admin</span></div>
+              <div class="proposal-list" id="proposalList"><div class="empty-state">Caricamento proposte…</div></div>
+            </article>
+          </div>
         </section>
 
         <section class="dashboard-page" data-page="activity" hidden>
