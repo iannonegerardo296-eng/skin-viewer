@@ -152,9 +152,7 @@ async function submitAuth(form, endpoint, buttonLabel) {
         const data = Object.fromEntries(new FormData(form).entries());
         const result = await api(endpoint, { method: 'POST', body: JSON.stringify(data) });
         setUser(result.user);
-        authView.hidden = true;
-        appShell.hidden = false;
-        await bootWorkspace();
+        await enterWorkspace(true, result.user);
         showToast(endpoint.includes('register') ? 'Account creato' : 'Accesso riuscito', `Benvenuto, ${result.user.username}.`);
     }
     catch (error) {
@@ -168,12 +166,12 @@ function routeTitle(route) {
     const titles = { overview: 'Overview', catalog: 'Catalogo skin', review: 'Revisore 3D', accounts: 'Account', 'create-account': 'Crea account', activity: 'Activity log', account: 'Il mio account' };
     return titles[route] || 'Overview';
 }
-function navigate(route) {
+function navigate(route, animate = true) {
     if (route === 'review') {
         window.location.href = 'review.html';
         return;
     }
-    if ((route === 'accounts' || route === 'create-account') && currentUser?.role !== 'admin') {
+    if ((route === 'accounts' || route === 'create-account' || route === 'activity') && currentUser?.role !== 'admin') {
         showToast('Accesso negato', 'Questa sezione è disponibile solo per gli admin.', true);
         return;
     }
@@ -186,7 +184,8 @@ function navigate(route) {
             page.classList.remove('page-enter');
             void page.offsetWidth;
             page.classList.add('page-enter');
-            animateRoute(page);
+            if (animate)
+                animateRoute(page);
         }
     });
     if (route === 'catalog')
@@ -321,7 +320,15 @@ async function bootWorkspace() {
         document.querySelector('[data-metric="admins"]')?.closest('.metric-card')?.remove();
         document.getElementById('signalBanner')?.remove();
     }
-    navigate(activeRoute);
+    navigate(activeRoute, false);
+}
+async function enterWorkspace(animate, user) {
+    setUser(user);
+    authView.hidden = true;
+    appShell.hidden = false;
+    if (animate)
+        animateWorkspace();
+    await bootWorkspace();
 }
 function wireInteractions() {
     $$('.auth-tab').forEach((tab) => tab.addEventListener('click', () => switchAuthMode((tab.dataset.authMode || 'login'))));
@@ -338,6 +345,10 @@ function wireInteractions() {
     byId('catalogSearch').addEventListener('input', (event) => { catalogQuery = event.target.value; renderCatalog(); });
     byId('catalogSource').addEventListener('change', (event) => { catalogSource = event.target.value; renderCatalog(); });
     byId('syncCatalog').addEventListener('click', async () => {
+        if (currentUser?.role !== 'admin') {
+            showToast('Accesso negato', 'La sincronizzazione è disponibile solo per gli admin.', true);
+            return;
+        }
         const button = byId('syncCatalog');
         setLoading(button, true, 'Sincronizzo…');
         try {
@@ -478,18 +489,14 @@ function wireUploadModal() {
 }
 async function boot() {
     wireInteractions();
-    introAnimation();
     try {
         const result = await api('/api/me');
-        setUser(result.user);
-        authView.hidden = true;
-        appShell.hidden = false;
-        animateWorkspace();
-        await bootWorkspace();
+        await enterWorkspace(false, result.user);
     }
     catch {
         authView.hidden = false;
         appShell.hidden = true;
+        introAnimation();
     }
 }
 if (document.readyState === 'loading')

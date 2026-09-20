@@ -36,7 +36,7 @@
         <div class="studio-card studio-card-small"><span class="studio-swatch"></span><b>03</b><small>new reviews</small></div>
         <span class="studio-star studio-star-one">✦</span><span class="studio-star studio-star-two">✳</span>
       </div>
-      <div class="auth-visual-footer"><span><b class="status-dot"></b> Database locale protetto</span><span>v3.0 / ADMIN EDITION</span></div>
+      <div class="auth-visual-footer"><span><b class="status-dot"></b> Workspace protetto</span><span>v3.0 / PRIVATE LIBRARY</span></div>
     </div>
     <div class="auth-panel-wrap">
       <div class="auth-panel">
@@ -62,7 +62,7 @@
           <button class="primary-action" type="submit"><span>Crea il mio account</span><b>↗</b></button>
         </form>
         <div class="auth-message" id="authMessage" role="status" aria-live="polite"></div>
-        <div class="auth-note"><span class="lock-icon">⌁</span> I dati restano nel database locale dell'istanza.</div>
+        <div class="auth-note"><span class="lock-icon">⌁</span> Sessione protetta e dati isolati dal workspace.</div>
       </div>
     </div>
   </section>
@@ -114,7 +114,7 @@
         </section>
 
         <section class="dashboard-page" data-page="catalog" hidden>
-          <div class="page-intro compact-intro"><div><span class="eyebrow">LIBRARY / CURATED SOURCES</span><h1>Catalogo skin.</h1><p>Una selezione di skin esistenti, con fonte e creator sempre visibili.</p></div><div class="intro-actions"><button class="secondary-action admin-only" id="openUploadCatalog">Carica skin <b>⬆</b></button><button class="secondary-action" id="syncCatalog">Sincronizza catalogo <b>↻</b></button></div></div>
+          <div class="page-intro compact-intro"><div><span class="eyebrow">LIBRARY / CURATED SOURCES</span><h1>Catalogo skin.</h1><p>Una selezione di skin esistenti, con fonte e creator sempre visibili.</p></div><div class="intro-actions"><button class="secondary-action admin-only" id="openUploadCatalog">Carica skin <b>⬆</b></button><button class="secondary-action admin-only" id="syncCatalog">Sincronizza catalogo <b>↻</b></button></div></div>
           <div class="catalog-toolbar"><label class="search-box"><span>⌕</span><input id="catalogSearch" placeholder="Cerca skin, creator o tag…"></label><select id="catalogSource"><option value="all">Tutte le fonti</option><option value="NameMC">NameMC</option><option value="Planet Minecraft">Planet Minecraft</option><option value="MineSkin">MineSkin</option></select><span class="catalog-count" id="catalogCount">— risultati</span></div>
           <div class="catalog-grid" id="catalogGrid"><div class="loading-grid">Caricamento catalogo…</div></div>
           <div class="catalog-disclaimer"><span>ⓘ</span><p>Le skin sono contenuti della community. Il catalogo conserva attribuzione, fonte originale e link di provenienza; le preview vengono servite tramite l'endpoint pubblico documentato di MineSkin.</p></div>
@@ -147,7 +147,7 @@
 
         <section class="dashboard-page" data-page="account" hidden>
           <div class="page-intro compact-intro"><div><span class="eyebrow">SETTINGS / IDENTITY</span><h1>Il mio account.</h1><p>Gestisci le credenziali dell'account con cui stai lavorando.</p></div></div>
-          <div class="account-columns"><article class="panel profile-panel"><div class="profile-hero"><span class="avatar large" id="profileAvatar">A</span><div><span class="eyebrow">SIGNED IN AS</span><h2 id="profileUsername">—</h2><p id="profileEmail">—</p></div></div><div class="profile-details"><div><span>RUOLO</span><b id="profileRole">Administrator</b></div><div><span>DATABASE</span><b>SQLite locale</b></div><div><span>SESSIONE</span><b class="green-text">Protetta</b></div></div></article><article class="panel password-panel"><div class="panel-heading"><div><span class="eyebrow">SECURITY</span><h2>Cambia password</h2></div></div><form id="passwordForm" class="settings-form"><label>Password attuale<input name="currentPassword" type="password" required></label><label>Nuova password<input name="newPassword" type="password" minlength="8" required></label><button class="primary-action compact" type="submit"><span>Aggiorna password</span><b>↗</b></button><div class="form-feedback" id="passwordMessage"></div></form></article></div>
+          <div class="account-columns"><article class="panel profile-panel"><div class="profile-hero"><span class="avatar large" id="profileAvatar">A</span><div><span class="eyebrow">SIGNED IN AS</span><h2 id="profileUsername">—</h2><p id="profileEmail">—</p></div></div><div class="profile-details"><div><span>RUOLO</span><b id="profileRole">Administrator</b></div><div><span>ACCESSO</span><b>Workspace privato</b></div><div><span>SESSIONE</span><b class="green-text">Protetta</b></div></div></article><article class="panel password-panel"><div class="panel-heading"><div><span class="eyebrow">SECURITY</span><h2>Cambia password</h2></div></div><form id="passwordForm" class="settings-form"><label>Password attuale<input name="currentPassword" type="password" required></label><label>Nuova password<input name="newPassword" type="password" minlength="8" required></label><button class="primary-action compact" type="submit"><span>Aggiorna password</span><b>↗</b></button><div class="form-feedback" id="passwordMessage"></div></form></article></div>
         </section>
       </div>
       <footer class="workspace-footer"><span>SKIN CONTROL CENTER · ADMIN EDITION</span><span>Sessioni protette · asset gestiti nel workspace</span></footer>
