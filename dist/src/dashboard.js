@@ -16,6 +16,33 @@ const appShell = byId('appShell');
 const authMessage = byId('authMessage');
 const loginForm = byId('loginForm');
 const registerForm = byId('registerForm');
+function introAnimation() {
+    const gsap = window.gsap;
+    if (!gsap || window.matchMedia('(prefers-reduced-motion: reduce)').matches)
+        return;
+    gsap.from(['.auth-visual-copy .eyebrow', '.auth-visual-copy h1', '.auth-visual-copy p', '.auth-visual-footer'], { opacity: 0, y: 22, duration: .7, stagger: .1, ease: 'power3.out' });
+    gsap.from('.auth-panel', { opacity: 0, y: 24, duration: .75, delay: .18, ease: 'power3.out' });
+    gsap.from('.studio-card-main', { opacity: 0, rotation: -5, scale: .88, duration: .8, delay: .25, ease: 'back.out(1.7)' });
+    gsap.from('.studio-card-small', { opacity: 0, rotation: 7, scale: .8, duration: .7, delay: .45, ease: 'back.out(1.8)' });
+    gsap.to('.studio-card-main', { y: -8, duration: 2.8, repeat: -1, yoyo: true, ease: 'sine.inOut' });
+    gsap.to('.studio-card-small', { y: 7, duration: 2.4, repeat: -1, yoyo: true, ease: 'sine.inOut', delay: .4 });
+    gsap.to('.studio-star-one', { rotation: 18, scale: 1.15, duration: 1.8, repeat: -1, yoyo: true, ease: 'sine.inOut' });
+    gsap.to('.studio-star-two', { rotation: -22, scale: .85, duration: 2.2, repeat: -1, yoyo: true, ease: 'sine.inOut', delay: .3 });
+}
+function animateWorkspace() {
+    const gsap = window.gsap;
+    if (!gsap || window.matchMedia('(prefers-reduced-motion: reduce)').matches)
+        return;
+    gsap.from('.sidebar', { x: -22, opacity: 0, duration: .55, ease: 'power3.out' });
+    gsap.from('.workspace-header', { y: -14, opacity: 0, duration: .5, delay: .08, ease: 'power3.out' });
+    gsap.from('.dashboard-page:not([hidden]) > *', { y: 16, opacity: 0, duration: .45, stagger: .06, delay: .15, ease: 'power3.out' });
+}
+function animateRoute(page) {
+    const gsap = window.gsap;
+    if (!gsap || window.matchMedia('(prefers-reduced-motion: reduce)').matches)
+        return;
+    gsap.fromTo(page.children, { y: 12, opacity: 0 }, { y: 0, opacity: 1, duration: .38, stagger: .045, ease: 'power2.out' });
+}
 function escapeHtml(value) {
     return String(value)
         .replaceAll('&', '&amp;')
@@ -159,6 +186,7 @@ function navigate(route) {
             page.classList.remove('page-enter');
             void page.offsetWidth;
             page.classList.add('page-enter');
+            animateRoute(page);
         }
     });
     if (route === 'catalog')
@@ -450,11 +478,13 @@ function wireUploadModal() {
 }
 async function boot() {
     wireInteractions();
+    introAnimation();
     try {
         const result = await api('/api/me');
         setUser(result.user);
         authView.hidden = true;
         appShell.hidden = false;
+        animateWorkspace();
         await bootWorkspace();
     }
     catch {
