@@ -34,6 +34,8 @@ function formatDate(value) {
     return new Intl.DateTimeFormat('it-IT', { day: '2-digit', month: 'short', year: 'numeric' }).format(date);
 }
 function relativeDate(value) {
+    if (!value)
+        return 'data non disponibile';
     const date = new Date(value.includes('T') ? value : `${value.replace(' ', 'T')}Z`);
     const seconds = Math.max(0, Math.floor((Date.now() - date.getTime()) / 1000));
     if (seconds < 60)

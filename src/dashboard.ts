@@ -78,6 +78,7 @@ function formatDate(value: string): string {
 }
 
 function relativeDate(value: string): string {
+  if (!value) return 'data non disponibile';
   const date = new Date(value.includes('T') ? value : `${value.replace(' ', 'T')}Z`);
   const seconds = Math.max(0, Math.floor((Date.now() - date.getTime()) / 1000));
   if (seconds < 60) return 'ora';
