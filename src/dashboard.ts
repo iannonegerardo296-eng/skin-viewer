@@ -176,6 +176,11 @@ function setLoading(button: HTMLButtonElement, loading: boolean, label: string):
   button.innerHTML = loading ? `<span class="button-spinner"></span>${label}` : button.dataset.originalLabel;
 }
 
+async function logout(): Promise<void> {
+  await api('/api/auth/logout', { method: 'POST' }).catch(() => undefined);
+  window.location.reload();
+}
+
 function setUser(user: User): void {
   currentUser = user;
   const name = escapeHtml(user.username);
@@ -372,7 +377,8 @@ function wireInteractions(): void {
   loginForm.addEventListener('submit', (event) => { event.preventDefault(); void submitAuth(loginForm, '/api/auth/login', 'Entra nel centro'); });
   registerForm.addEventListener('submit', (event) => { event.preventDefault(); void submitAuth(registerForm, '/api/auth/register', 'Crea il mio account'); });
   $$<HTMLElement>('[data-route]').forEach((item) => item.addEventListener('click', () => navigate(item.dataset.route || 'overview')));
-  byId('logoutButton').addEventListener('click', async () => { await api('/api/auth/logout', { method: 'POST' }).catch(() => undefined); window.location.reload(); });
+  byId('logoutButton').addEventListener('click', () => void logout());
+  byId('headerLogoutButton').addEventListener('click', () => void logout());
   byId('themeButton').addEventListener('click', () => {
     const next = document.documentElement.dataset.theme === 'light' ? 'dark' : 'light';
     document.documentElement.dataset.theme = next;
