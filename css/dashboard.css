@@ -54,9 +54,42 @@ button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{ou
 .brand-lockup{display:flex;align-items:center;gap:10px;color:var(--text);font:700 12px/1 var(--mono);letter-spacing:.08em}
 .brand-lockup b{color:var(--accent);font-weight:500}
 .brand-lockup small{display:block;margin-top:5px;color:var(--faint);font:500 9px var(--mono);letter-spacing:.14em}
-.brand-mark{display:inline-flex;align-items:flex-end;gap:2px;width:23px;height:23px;padding:4px;border:1px solid var(--accent);background:var(--accent);border-radius:4px}
-.brand-mark i{display:block;width:4px;background:var(--bg)}
-.brand-mark i:nth-child(1){height:7px}.brand-mark i:nth-child(2){height:12px}.brand-mark i:nth-child(3){height:16px}
+.brand-mark{
+  position:relative;
+  display:grid;
+  grid-template-columns:repeat(3,4px);
+  align-items:end;
+  justify-content:center;
+  gap:3px;
+  flex:0 0 28px;
+  width:28px;
+  height:28px;
+  padding:5px;
+  overflow:hidden;
+  border:1px solid rgba(220,239,255,.42);
+  border-radius:9px;
+  background:linear-gradient(145deg,rgba(178,239,255,.92),rgba(91,190,229,.68));
+  box-shadow:0 9px 24px -13px var(--accent),inset 0 1px rgba(255,255,255,.7);
+}
+.brand-mark::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  background:linear-gradient(125deg,rgba(255,255,255,.42),transparent 44%);
+}
+.brand-mark i{
+  position:relative;
+  z-index:1;
+  display:block;
+  width:4px;
+  min-width:4px;
+  border-radius:99px 99px 2px 2px;
+  background:#092035;
+}
+.brand-mark i:nth-child(1){height:8px}.brand-mark i:nth-child(2){height:13px}.brand-mark i:nth-child(3){height:18px}
+.brand-lockup{min-width:0}
+.brand-lockup>span:last-child{min-width:0;white-space:nowrap}
 .status-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--accent)}
 .auth-view{position:relative;z-index:1;display:grid;grid-template-columns:1.2fr .8fr;min-height:100vh}
 .auth-visual{display:flex;flex-direction:column;justify-content:space-between;padding:42px clamp(28px,7vw,110px);border-right:1px solid var(--line)}
@@ -456,6 +489,7 @@ body{background:transparent}
 [data-theme="light"] .workspace-header{background:rgba(240,245,253,.64)}
 [data-theme="light"] .auth-form input,[data-theme="light"] .settings-form input,[data-theme="light"] .search-box input,[data-theme="light"] .catalog-toolbar select{background:rgba(255,255,255,.48)}
 [data-theme="light"] .metric-card,[data-theme="light"] .panel,[data-theme="light"] .catalog-card,[data-theme="light"] .signal-banner,[data-theme="light"] .catalog-disclaimer,[data-theme="light"] .profile-panel,[data-theme="light"] .password-panel,[data-theme="light"] .table-panel,[data-theme="light"] .activity-full-panel{background:linear-gradient(145deg,rgba(255,255,255,.7),rgba(237,243,253,.55))}
+[data-theme="light"] .brand-mark i{background:#07324a}
 
 /* Lower decorative objects and add a stronger glass refraction layer. */
 .visual-studio{top:35%;filter:drop-shadow(0 30px 45px rgba(0,0,0,.2))}

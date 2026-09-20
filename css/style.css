@@ -1290,6 +1290,160 @@ html body .viewer{background:rgba(4,8,18,.76);backdrop-filter:blur(18px);-webkit
 html body .viewer-top,html body .viewer-bottom,html body .filmstrip{background:rgba(16,26,47,.68);border-color:rgba(205,227,255,.18);backdrop-filter:blur(24px) saturate(140%);-webkit-backdrop-filter:blur(24px) saturate(140%)}
 html body .stage-frame{border:1px solid rgba(220,239,255,.34);border-radius:30px;background:linear-gradient(145deg,rgba(31,48,81,.58),rgba(7,14,29,.6));box-shadow:0 35px 90px -46px #000,inset 0 1px rgba(255,255,255,.16);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px)}
 html body .viewer-close,html body .nav-btn,html body .verdict-btn,html body .viewer-top input,html body .viewer-top select{border-radius:999px;border-color:rgba(205,227,255,.18);background:rgba(255,255,255,.06)}
+
+/* Authoritative review shell overrides. These must remain last because the
+   legacy review stylesheet contains several later theme blocks. */
+html body{
+  overflow-x:hidden;
+  color:#f5f8ff;
+  background:#070b16;
+  font-family:'DM Sans','Manrope',Segoe UI,sans-serif;
+}
+html body .top-sticky{
+  position:sticky;
+  top:0;
+  z-index:100;
+  overflow:visible;
+  background:rgba(7,12,25,.66)!important;
+  border-bottom:1px solid rgba(205,227,255,.18)!important;
+  box-shadow:0 24px 70px -42px rgba(0,0,0,.72),inset 0 1px rgba(255,255,255,.14);
+  backdrop-filter:blur(28px) saturate(145%);
+  -webkit-backdrop-filter:blur(28px) saturate(145%);
+}
+html body .review-nav{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  min-height:50px;
+  padding:8px clamp(14px,4vw,58px);
+  background:linear-gradient(110deg,rgba(255,255,255,.1),rgba(117,185,255,.035),rgba(255,255,255,.08))!important;
+  border-bottom:1px solid rgba(205,227,255,.18)!important;
+  font-family:'Plus Jakarta Sans','Manrope',sans-serif;
+}
+html body #topbar{
+  display:block;
+  background:transparent!important;
+  border:0!important;
+}
+html body .header-row{
+  display:flex;
+  align-items:center;
+  flex-wrap:wrap;
+  max-width:1500px;
+  gap:10px;
+  padding:12px clamp(14px,4vw,58px);
+  margin:0 auto;
+}
+html body .header-row-top{min-height:64px}
+html body .header-row-bottom{justify-content:space-between}
+html body .header-spacer{flex:1 1 12px}
+html body .brand{
+  display:flex;
+  align-items:center;
+  gap:11px;
+  min-width:0;
+  margin-right:auto;
+}
+html body .brand h1{
+  margin:0;
+  color:#f5f8ff;
+  font-family:'Plus Jakarta Sans','Manrope',sans-serif;
+  font-size:16px;
+  letter-spacing:-.04em;
+}
+html body .brand p{margin:5px 0 0;color:#9eacc4}
+html body .hero-btn,html body .toolbtn,html body .theme-toggle,html body .filters button,html body .cat-chip,html body .chip{
+  min-height:36px;
+  border:1px solid rgba(205,227,255,.18)!important;
+  border-radius:999px!important;
+  background:rgba(255,255,255,.055)!important;
+  color:#c7d3e8;
+  box-shadow:inset 0 1px rgba(255,255,255,.12);
+}
+html body .hero-btn{padding:0 14px}
+html body .filters{display:flex;align-items:center;flex-wrap:wrap;gap:6px}
+html body .filters button{padding:0 11px}
+html body .filters button.active,html body .cat-chip.active,html body .chip.active{
+  border-color:rgba(158,231,255,.5)!important;
+  background:rgba(158,231,255,.16)!important;
+  color:#9ee7ff!important;
+}
+html body .actions-group{display:flex;align-items:center;flex-wrap:wrap;gap:7px}
+html body .dropzone{
+  position:relative;
+  overflow:hidden;
+  width:min(940px,calc(100% - 28px));
+  margin:36px auto;
+  border:1px solid rgba(220,239,255,.34)!important;
+  border-radius:30px!important;
+  background:linear-gradient(145deg,rgba(31,47,79,.68),rgba(10,18,37,.54))!important;
+  box-shadow:0 35px 90px -48px rgba(0,0,0,.68),inset 0 1px rgba(255,255,255,.18);
+  backdrop-filter:blur(28px) saturate(140%);
+  -webkit-backdrop-filter:blur(28px) saturate(140%);
+}
+html body .grid{
+  width:min(1500px,calc(100% - 28px));
+  margin:0 auto 42px;
+}
+html body .skin-card{
+  overflow:hidden;
+  border:1px solid rgba(205,227,255,.18)!important;
+  border-radius:22px!important;
+  background:linear-gradient(145deg,rgba(29,44,73,.68),rgba(12,20,39,.5))!important;
+  box-shadow:0 24px 65px -44px rgba(0,0,0,.68),inset 0 1px rgba(255,255,255,.14);
+}
+html body .app-overlay{
+  z-index:200;
+  background:rgba(3,8,18,.66)!important;
+  backdrop-filter:blur(14px);
+  -webkit-backdrop-filter:blur(14px);
+}
+html body .app-panel{
+  width:min(560px,calc(100vw - 28px));
+  max-height:calc(100vh - 28px);
+  overflow:auto;
+  border:1px solid rgba(220,239,255,.34)!important;
+  border-radius:28px!important;
+  background:linear-gradient(145deg,rgba(31,46,78,.86),rgba(10,18,36,.82))!important;
+  box-shadow:0 38px 100px -42px #000,inset 0 1px rgba(255,255,255,.18);
+  backdrop-filter:blur(30px) saturate(145%);
+  -webkit-backdrop-filter:blur(30px) saturate(145%);
+}
+html body .viewer{
+  z-index:150;
+  background:rgba(4,8,18,.8)!important;
+  backdrop-filter:blur(18px);
+  -webkit-backdrop-filter:blur(18px);
+}
+html body .viewer-top,html body .viewer-bottom,html body .filmstrip{
+  background:rgba(16,26,47,.74)!important;
+  border-color:rgba(205,227,255,.18)!important;
+  box-shadow:inset 0 1px rgba(255,255,255,.12);
+  backdrop-filter:blur(24px) saturate(140%);
+  -webkit-backdrop-filter:blur(24px) saturate(140%);
+}
+html body .stage-frame{
+  overflow:hidden;
+  border:1px solid rgba(220,239,255,.34)!important;
+  border-radius:30px!important;
+  background:linear-gradient(145deg,rgba(31,48,81,.62),rgba(7,14,29,.66))!important;
+  box-shadow:0 35px 90px -46px #000,inset 0 1px rgba(255,255,255,.16);
+}
+html body .viewer-close,html body .nav-btn,html body .verdict-btn,html body .viewer-top input,html body .viewer-top select{
+  border-radius:999px!important;
+  border-color:rgba(205,227,255,.18)!important;
+  background:rgba(255,255,255,.06)!important;
+}
+@media (max-width:720px){
+  html body .header-row{padding:9px 12px}
+  html body .header-row-top{align-items:flex-start}
+  html body .header-spacer{display:none}
+  html body .hero-label{display:none}
+  html body .hero-btn{width:38px;padding:0;justify-content:center}
+  html body .dropzone{width:calc(100% - 20px);margin:22px auto;border-radius:24px!important;padding:42px 18px}
+  html body .grid{width:calc(100% - 20px)}
+  html body .stage-frame{border-radius:22px!important}
+}
   .nav-btn, .viewer-close{ border-radius:11px; }
   .verdict-btn{ border-radius:12px; box-shadow:0 10px 28px -22px var(--shadow-color); }
   .filmstrip img{ border-radius:11px; }
